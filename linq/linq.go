@@ -1,7 +1,10 @@
 package linq
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/cgalvisleon/et/et"
 )
 
 // From struct to use in linq
@@ -53,18 +56,41 @@ type Lintersect struct{}
 // Except struct to use in linq
 type Lexcept struct{}
 
+// TypeCommand struct to use in linq
+type TypeCommand int
+
+const (
+	TpInsert TypeCommand = iota
+	TpUpdate
+	TpDelete
+)
+
 // Command struct to use in linq
-type Lcommand struct{}
+type Lcommand struct {
+	From    *Lfrom
+	Command TypeCommand
+	Data    et.Json
+	New     et.Json
+	Update  et.Json
+}
+
+type Lquery int
+
+const (
+	TpData Lquery = iota
+	TpRow
+)
 
 // Linq struct
 type Linq struct {
 	Froms    []*Lfrom
 	Selects  []*Lselect
 	Wheres   []*Lwhere
-	Qroupby  []*Lgroupby
-	Orderby  []*Lorderby
-	Join     []*Ljoin
+	GroupsBy []*Lgroupby
+	Ordersby []*Lorderby
+	Joins    []*Ljoin
 	Database *Database
+	Tp       Lquery
 	Sql      string
 	Command  *Lcommand
 }
@@ -112,7 +138,15 @@ func getAs(linq *Linq) string {
 // From method new linq
 func From(model *Model) *Linq {
 	result := &Linq{
-		Froms: []*Lfrom{},
+		Froms:    []*Lfrom{},
+		Selects:  []*Lselect{},
+		Wheres:   []*Lwhere{},
+		GroupsBy: []*Lgroupby{},
+		Ordersby: []*Lorderby{},
+		Joins:    []*Ljoin{},
+		Database: model.Database,
+		Sql:      "",
+		Command:  nil,
 	}
 
 	as := getAs(result)
@@ -121,20 +155,43 @@ func From(model *Model) *Linq {
 	return result
 }
 
-// From method to use in linq
-func (l *Linq) From(model *Model) *Linq {
-	idx := -1
+// Get index model in linq
+func (l *Linq) indexFrom(model *Model) int {
+	result := -1
 	for i, f := range l.Froms {
 		if f.Model == model {
-			idx = i
+			result = i
 			break
 		}
 	}
 
+	return result
+}
+
+// AddFrom method to use in linq
+func (l *Linq) addFrom(model *Model) int {
+	idx := l.indexFrom(model)
 	if idx == -1 {
 		as := getAs(l)
 		l.Froms = append(l.Froms, &Lfrom{Linq: l, Model: model, As: as})
+		idx = len(l.Froms) - 1
 	}
 
+	return idx
+}
+
+// From method to use in linq
+func (l *Linq) From(model *Model) *Linq {
+	l.addFrom(model)
+
 	return l
+}
+
+func (l *Linq) Debug() string {
+	r, err := json.Marshal(l)
+	if err != nil {
+		return err.Error()
+	}
+
+	return string(r)
 }

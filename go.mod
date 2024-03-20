@@ -1,4 +1,4 @@
-module github.com/cgalvisleon/linq
+module github.com/cgalvisleon
 
 go 1.22.1
 

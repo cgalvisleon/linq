@@ -1,10 +1,17 @@
 package linq
 
+import (
+	"database/sql"
+
+	"github.com/cgalvisleon/et/strs"
+)
+
 // Database struct used to define a database
 type Database struct {
 	Name            string
 	Description     string
 	TypeDriver      TypeDriver
+	DB              *sql.DB
 	Driver          *Driver
 	Schemes         []*Schema
 	Models          []*Model
@@ -20,7 +27,7 @@ type Database struct {
 // NewDatabase create a new database
 func NewDatabase(name, description string, typeDriver TypeDriver) *Database {
 	return &Database{
-		Name:        name,
+		Name:        strs.Lowcase(name),
 		Description: description,
 		TypeDriver:  typeDriver,
 		Schemes:     []*Schema{},

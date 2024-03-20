@@ -1,5 +1,7 @@
 package linq
 
+import "github.com/cgalvisleon/et/strs"
+
 // Schema struct used to define a schema in a database
 type Schema struct {
 	Name            string
@@ -19,7 +21,7 @@ type Schema struct {
 func NewSchema(database *Database, name, description string) *Schema {
 	result := &Schema{
 		Database:        database,
-		Name:            name,
+		Name:            strs.Lowcase(name),
 		Description:     description,
 		Models:          []*Model{},
 		SourceField:     database.SourceField,

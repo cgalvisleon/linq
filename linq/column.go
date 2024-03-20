@@ -9,17 +9,18 @@ import (
 type TypeColumn int
 
 const (
-	TpColumn TypeColumn = iota
-	TpAtrib             // Atrib is a json atrib in a source column
-	TpDetail            // Detail is a json detail in a source column for master details
-	TpObject            // Object is a json object in a source column
+	TpColumn   TypeColumn = iota
+	TpAtrib               // Atrib is a json atrib in a source column
+	TpDetail              // Detail is array objects asociated to master data
+	TpObject              // Object is a json object your basic struc is {_id: "", name: ""}
+	TpFunction            // Function is a sql get a one value as model
 )
 
 type TypeData int
 
 const (
-	TpString TypeData = iota
-	TpText
+	TpKey TypeData = iota
+	TpString
 	TpInt
 	TpInt64
 	TpFloat
@@ -65,7 +66,7 @@ func IndexColumn(model *Model, name string) int {
 	return result
 }
 
-func Col(model *Model, name string) *Column {
+func COlumn(model *Model, name string) *Column {
 	idx := IndexColumn(model, name)
 	if idx >= 0 {
 		return model.Definition[idx]
@@ -137,7 +138,7 @@ func NewAtrib(model *Model, name, description string, typeData TypeData, _defaul
 
 	result := NewColumn(model, name, description, TpAtrib, typeData, _default)
 	if result != nil {
-		source := Col(model, model.SourceField)
+		source := COlumn(model, model.SourceField)
 		if source != nil {
 			source.Atribs = append(source.Atribs, result)
 		}

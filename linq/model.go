@@ -1,10 +1,14 @@
 package linq
 
-import "github.com/cgalvisleon/et/et"
+import (
+	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/strs"
+)
 
 // Type columns
 type TypeTrigger int
 
+// TypeTrigger is a enum for trigger type
 const (
 	BeforeInsert TypeTrigger = iota
 	AfterInsert
@@ -14,6 +18,7 @@ const (
 	AfterDelete
 )
 
+// Constraint is a struct for foreign key
 type Constraint struct {
 	Name        string
 	Description string
@@ -22,10 +27,13 @@ type Constraint struct {
 	ParentKey   []*Column
 }
 
+// Trigger is a function for trigger
 type Trigger func(model *Model, old, new *et.Json, data et.Json) error
 
+// Listener is a function for listener
 type Listener func(data et.Json)
 
+// Model is a struct for models in a schema
 type Model struct {
 	Name            string
 	Description     string
@@ -62,11 +70,12 @@ type Model struct {
 	Version         int
 }
 
+// NewModel create a new model
 func NewModel(schema *Schema, name, description string) *Model {
 	result := &Model{
 		Database:        schema.Database,
 		Schema:          schema,
-		Name:            name,
+		Name:            strs.Uppcase(name),
 		Description:     description,
 		Definition:      []*Column{},
 		PrimaryKeys:     []string{},
@@ -86,6 +95,7 @@ func NewModel(schema *Schema, name, description string) *Model {
 	return result
 }
 
+// NewModelDb create a new model
 func NewModelDb(database *Database, name, description string) *Model {
 	result := &Model{
 		Database:        database,
@@ -107,4 +117,19 @@ func NewModelDb(database *Database, name, description string) *Model {
 	database.AddModel(result)
 
 	return result
+}
+
+// Find a column in the model
+func (m *Model) Column(name string) *Column {
+	idx := IndexColumn(m, name)
+	if idx >= 0 {
+		return m.Definition[idx]
+	}
+
+	return nil
+}
+
+// Method short to find a column in the model
+func (m *Model) C(name string) *Column {
+	return m.Column(name)
 }
