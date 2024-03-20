@@ -20,5 +20,6 @@ func main() {
 	B.DefineColum("user_id", "", linq.TpKey, "")
 
 	r := linq.From(A)
-	logs.Debug(r.Debug())
+	s := r.Debug()
+	logs.Debug(s)
 }
