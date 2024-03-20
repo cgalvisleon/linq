@@ -61,3 +61,50 @@ type Model struct {
 	Ddl             string
 	Version         int
 }
+
+func NewModel(schema *Schema, name, description string) *Model {
+	result := &Model{
+		Database:        schema.Database,
+		Schema:          schema,
+		Name:            name,
+		Description:     description,
+		Definition:      []*Column{},
+		PrimaryKeys:     []string{},
+		ForeignKey:      []*Constraint{},
+		Index:           []string{},
+		SourceField:     schema.SourceField,
+		DateMakeField:   schema.DateMakeField,
+		DateUpdateField: schema.DateUpdateField,
+		SerieField:      schema.SerieField,
+		CodeField:       schema.CodeField,
+		StateField:      schema.StateField,
+		ProjectField:    schema.ProjectField,
+	}
+
+	schema.AddModel(result)
+
+	return result
+}
+
+func NewModelDb(database *Database, name, description string) *Model {
+	result := &Model{
+		Database:        database,
+		Name:            name,
+		Description:     description,
+		Definition:      []*Column{},
+		PrimaryKeys:     []string{},
+		ForeignKey:      []*Constraint{},
+		Index:           []string{},
+		SourceField:     database.SourceField,
+		DateMakeField:   database.DateMakeField,
+		DateUpdateField: database.DateUpdateField,
+		SerieField:      database.SerieField,
+		CodeField:       database.CodeField,
+		StateField:      database.StateField,
+		ProjectField:    database.ProjectField,
+	}
+
+	database.AddModel(result)
+
+	return result
+}

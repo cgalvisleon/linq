@@ -15,14 +15,28 @@ const (
 	TpObject            // Object is a json object in a source column
 )
 
+type TypeData int
+
+const (
+	TpString TypeData = iota
+	TpText
+	TpInt
+	TpInt64
+	TpFloat
+	TpBool
+	TpDateTime
+	TpJson
+)
+
 // Validation tipe function
 type Validation func(col *Column, value interface{}) bool
 
+// Column is a struct for columns in a model
 type Column struct {
 	Name        string
 	Description string
 	TypeColumn  TypeColumn
-	TypeData    string
+	TypeData    TypeData
 	Default     any
 	Database    *Database
 	Schema      *Schema
@@ -38,8 +52,36 @@ type Column struct {
 	Validation  Validation
 }
 
+// IndexColumn return index of column in model
+func IndexColumn(model *Model, name string) int {
+	result := -1
+	for i, col := range model.Definition {
+		if col.Name == strs.Uppcase(name) {
+			result = i
+			break
+		}
+	}
+
+	return result
+}
+
+func Col(model *Model, name string) *Column {
+	idx := IndexColumn(model, name)
+	if idx >= 0 {
+		return model.Definition[idx]
+	}
+
+	return nil
+}
+
 // NewColumn create a new column
-func NewColumn(model *Model, name, description string, typeColumm TypeColumn, typeData string, _default any) *Column {
+func NewColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default any) *Column {
+	idx := IndexColumn(model, name)
+
+	if idx >= 0 {
+		return model.Definition[idx]
+	}
+
 	result := &Column{
 		Database:    model.Database,
 		Schema:      model.Schema,
@@ -88,12 +130,20 @@ func NewColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 }
 
 // Newatrib create a new atrib
-func NewAtrib(model *Model, name, description string, typeColumm TypeColumn, typeData string, _default any) *Column {
+func NewAtrib(model *Model, name, description string, typeData TypeData, _default any) *Column {
 	if !model.UseSource {
 		return nil
 	}
 
-	return NewColumn(model, name, description, typeColumm, typeData, _default)
+	result := NewColumn(model, name, description, TpAtrib, typeData, _default)
+	if result != nil {
+		source := Col(model, model.SourceField)
+		if source != nil {
+			source.Atribs = append(source.Atribs, result)
+		}
+	}
+
+	return result
 }
 
 // describe carapteristics of column
@@ -144,17 +194,4 @@ func (c *Column) Up() string {
 // Resutn name of column in lowercase
 func (c *Column) Low() string {
 	return strs.Lowcase(c.Name)
-}
-
-// Resutn name of column in schema.table.column
-func (c *Column) ColName() string {
-	result := strs.Uppcase(c.Name)
-	result = strs.Append(c.Model.Name, result, ".")
-	if c.Schema == nil {
-		return result
-	}
-
-	result = strs.Append(c.Schema.Name, result, ".")
-
-	return result
 }
