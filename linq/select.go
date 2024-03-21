@@ -11,7 +11,7 @@ func (l *Linq) addSelect(model *Model, name string) *Lselect {
 
 	idx := -1
 	for i, v := range l.Selects {
-		if v.Column.Model == model && strs.Uppcase(v.Column.Name) == strs.Uppcase(name) {
+		if v.Column.Model == model && v.Column.Up() == strs.Uppcase(name) {
 			idx = i
 			break
 		}
@@ -28,24 +28,22 @@ func (l *Linq) addSelect(model *Model, name string) *Lselect {
 	return result
 }
 
-func (l *Linq) addSelects(sel ...any) *Linq {
+func (m *Model) Select(sel ...any) *Linq {
+	r := From(m)
+	r.Tp = TpRow
+
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
-			l.addSelect(v.Model, v.Name)
+			r.addSelect(v.Model, v.Name)
 		case *Column:
-			l.addSelect(v.Model, v.Name)
+			r.addSelect(v.Model, v.Name)
+		case string:
+			r.addSelect(m, v)
 		}
 	}
 
-	return l
-}
-
-func (m *Model) Select(sel ...any) *Linq {
-	result := From(m)
-	result.Tp = TpRow
-
-	return result
+	return r
 }
 
 func (m *Model) Data(sel ...any) *Linq {

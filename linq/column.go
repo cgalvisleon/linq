@@ -9,12 +9,32 @@ import (
 type TypeColumn int
 
 const (
-	TpColumn   TypeColumn = iota
-	TpAtrib               // Atrib is a json atrib in a source column
-	TpDetail              // Detail is array objects asociated to master data
-	TpObject              // Object is a json object your basic struc is {_id: "", name: ""}
-	TpFunction            // Function is a sql get a one value as model
+	TpColumn    TypeColumn = iota
+	TpAtrib                // Atrib is a json atrib in a source column
+	TpDetail               // Detail is array objects asociated to master data
+	TpReference            // Reference is a json object your basic struc is {_id: "", name: ""}
+	TpCaption              // Caption is a text column and show value reference sy id
+	TpFunction             // Function is a sql get a one value as model
 )
+
+// String return string of type column
+func (t TypeColumn) String() string {
+	switch t {
+	case TpColumn:
+		return "column"
+	case TpAtrib:
+		return "atrib"
+	case TpDetail:
+		return "detail"
+	case TpReference:
+		return "reference"
+	case TpCaption:
+		return "caption"
+	case TpFunction:
+		return "function"
+	}
+	return ""
+}
 
 type TypeData int
 
@@ -29,7 +49,34 @@ const (
 	TpJson
 	TpArray
 	TpSerie
+	TpAny
 )
+
+func (t TypeData) String() string {
+	switch t {
+	case TpKey:
+		return "key"
+	case TpString:
+		return "string"
+	case TpInt:
+		return "int"
+	case TpInt64:
+		return "int64"
+	case TpFloat:
+		return "float"
+	case TpBool:
+		return "bool"
+	case TpDateTime:
+		return "datetime"
+	case TpJson:
+		return "json"
+	case TpArray:
+		return "array"
+	case TpSerie:
+		return "serie"
+	}
+	return ""
+}
 
 // Validation tipe function
 type Validation func(col *Column, value interface{}) bool
@@ -45,6 +92,11 @@ type Column struct {
 	Schema      *Schema
 	Model       *Model
 	Atribs      []*Column
+	Main        *Column
+	Reference   *Reference
+	References  []*Column
+	Dependents  []*Column
+	Details     Details
 	Indexed     bool
 	Unique      bool
 	Required    bool
@@ -53,6 +105,13 @@ type Column struct {
 	ForeignKey  bool
 	Hidden      bool
 	Validation  Validation
+}
+
+type Reference struct {
+	ThisKey   *Column
+	Name      string
+	OtherKey  *Column
+	Reference *Column
 }
 
 // IndexColumn return index of column in model
@@ -68,9 +127,10 @@ func IndexColumn(model *Model, name string) int {
 	return result
 }
 
+// Column return a column in the model
 func COlumn(model *Model, name string) *Column {
 	idx := IndexColumn(model, name)
-	if idx >= 0 {
+	if idx != -1 {
 		return model.Colums[idx]
 	}
 
@@ -81,7 +141,7 @@ func COlumn(model *Model, name string) *Column {
 func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default any) *Column {
 	idx := IndexColumn(model, name)
 
-	if idx >= 0 {
+	if idx != -1 {
 		return model.Colums[idx]
 	}
 
@@ -180,4 +240,33 @@ func (c *Column) Up() string {
 // Resutn name of column in lowercase
 func (c *Column) Low() string {
 	return strs.Lowcase(c.Name)
+}
+
+// AddDependent add a column dependent
+func (c *Column) AddDependent(col *Column) {
+	idx := -1
+	for i, v := range c.Dependents {
+		if v.Model == col.Model && v.Up() == col.Up() {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		c.Dependents = append(c.Dependents, col)
+	}
+}
+
+func (c *Column) AddRefeence(col *Column) {
+	idx := -1
+	for i, v := range c.References {
+		if v.Model == col.Model && v.Up() == col.Up() {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		c.References = append(c.References, col)
+	}
 }

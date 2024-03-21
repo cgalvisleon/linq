@@ -27,8 +27,17 @@ type Constraint struct {
 	ParentKey   []string
 }
 
+// Index is a struct for index
+type Index struct {
+	Column *Column
+	Asc    bool
+}
+
 // Trigger is a function for trigger
 type Trigger func(model *Model, old, new *et.Json, data et.Json) error
+
+// Details is a function for details
+type Details func(col *Column, data *et.Json)
 
 // Listener is a function for listener
 type Listener func(data et.Json)
@@ -41,9 +50,9 @@ type Model struct {
 	Schema          *Schema
 	Database        *Database
 	Table           string
-	PrimaryKeys     []string
+	PrimaryKeys     []*Column
 	ForeignKey      []*Constraint
-	Index           []string
+	Index           []*Index
 	sourceField     string
 	dateMakeField   string
 	dateUpdateField string
@@ -67,7 +76,7 @@ type Model struct {
 	AfterDelete     []Trigger
 	OnListener      Listener
 	Integrity       bool
-	Ddl             string
+	DDL             string
 	Version         int
 }
 
@@ -79,9 +88,9 @@ func NewModel(schema *Schema, name, description string) *Model {
 		Name:            strs.Uppcase(name),
 		Description:     description,
 		Colums:          []*Column{},
-		PrimaryKeys:     []string{},
+		PrimaryKeys:     []*Column{},
 		ForeignKey:      []*Constraint{},
-		Index:           []string{schema.idTField},
+		Index:           []*Index{},
 		sourceField:     schema.sourceField,
 		dateMakeField:   schema.dateMakeField,
 		dateUpdateField: schema.dateUpdateField,
@@ -93,6 +102,7 @@ func NewModel(schema *Schema, name, description string) *Model {
 	}
 
 	result.DefineColum(schema.idTField, "_idT of the table", TpKey, "-1")
+	result.AddIndex(schema.idTField)
 
 	schema.AddModel(result)
 
@@ -106,9 +116,9 @@ func NewModelDb(database *Database, name, description string) *Model {
 		Name:            name,
 		Description:     description,
 		Colums:          []*Column{},
-		PrimaryKeys:     []string{},
+		PrimaryKeys:     []*Column{},
 		ForeignKey:      []*Constraint{},
-		Index:           []string{},
+		Index:           []*Index{},
 		sourceField:     database.SourceField,
 		dateMakeField:   database.DateMakeField,
 		dateUpdateField: database.DateUpdateField,
@@ -145,7 +155,7 @@ func (m *Model) Definition() et.Json {
 // Find a column in the model
 func (m *Model) Column(name string) *Column {
 	idx := IndexColumn(m, name)
-	if idx >= 0 {
+	if idx != -1 {
 		return m.Colums[idx]
 	}
 
@@ -155,4 +165,94 @@ func (m *Model) Column(name string) *Column {
 // Method short to find a column in the model
 func (m *Model) C(name string) *Column {
 	return m.Column(name)
+}
+
+// Add primary key column to the model
+func (m *Model) AddPrimaryKey(name string) {
+	col := COlumn(m, name)
+	if col == nil {
+		return
+	}
+
+	idx := -1
+	for i, v := range m.PrimaryKeys {
+		if v.Up() == strs.Uppcase(name) {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		col.Indexed = true
+		col.PrimaryKey = true
+		m.PrimaryKeys = append(m.PrimaryKeys, col)
+	}
+}
+
+// Add foreign key to the model
+func (m *Model) AddForeignKey(name, description string, foreignKey []string, parentModel *Model, parentKey []string) {
+	idx := -1
+	for i, v := range m.ForeignKey {
+		if strs.Uppcase(v.Name) == strs.Uppcase(name) {
+			idx = i
+			break
+		}
+	}
+
+	if idx != -1 {
+		return
+	}
+
+	for _, n := range foreignKey {
+		colA := COlumn(m, n)
+		if colA == nil {
+			return
+		}
+
+		colB := COlumn(parentModel, parentKey[0])
+		if colB == nil {
+			return
+		}
+
+		colA.Indexed = true
+		colA.ForeignKey = true
+		colA.AddRefeence(colB)
+
+		colB.Indexed = true
+		colB.PrimaryKey = true
+		colB.AddDependent(colA)
+	}
+
+	m.ForeignKey = append(m.ForeignKey, &Constraint{Name: name, Description: description, ForeignKey: foreignKey, ParentModel: parentModel, ParentKey: parentKey})
+}
+
+// Add index column to the model
+func (m *Model) AddIndex(name string) *Column {
+	col := COlumn(m, name)
+	if col == nil {
+		return nil
+	}
+
+	idx := -1
+	for i, v := range m.Index {
+		if v.Column.Up() == strs.Uppcase(name) {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		col.Indexed = true
+		m.Index = append(m.Index, &Index{Column: col, Asc: true})
+	}
+
+	return col
+}
+
+func (m *Model) Details(name, description string, _default any, details Details) *Column {
+	result := newColumn(m, name, description, TpDetail, TpAny, _default)
+	result.Hidden = true
+	result.Details = details
+
+	return result
 }
