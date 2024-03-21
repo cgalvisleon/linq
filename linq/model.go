@@ -22,9 +22,9 @@ const (
 type Constraint struct {
 	Name        string
 	Description string
-	ForeignKey  []*Column
+	ForeignKey  []string
 	ParentModel *Model
-	ParentKey   []*Column
+	ParentKey   []string
 }
 
 // Trigger is a function for trigger
@@ -37,20 +37,21 @@ type Listener func(data et.Json)
 type Model struct {
 	Name            string
 	Description     string
-	Definition      []*Column
+	Colums          []*Column
 	Schema          *Schema
 	Database        *Database
 	Table           string
 	PrimaryKeys     []string
 	ForeignKey      []*Constraint
 	Index           []string
-	SourceField     string
-	DateMakeField   string
-	DateUpdateField string
-	SerieField      string
-	CodeField       string
-	StateField      string
-	ProjectField    string
+	sourceField     string
+	dateMakeField   string
+	dateUpdateField string
+	serieField      string
+	codeField       string
+	stateField      string
+	projectField    string
+	idTField        string
 	UseSource       bool
 	UseDateMake     bool
 	UseDateUpdate   bool
@@ -77,18 +78,21 @@ func NewModel(schema *Schema, name, description string) *Model {
 		Schema:          schema,
 		Name:            strs.Uppcase(name),
 		Description:     description,
-		Definition:      []*Column{},
+		Colums:          []*Column{},
 		PrimaryKeys:     []string{},
 		ForeignKey:      []*Constraint{},
-		Index:           []string{},
-		SourceField:     schema.SourceField,
-		DateMakeField:   schema.DateMakeField,
-		DateUpdateField: schema.DateUpdateField,
-		SerieField:      schema.SerieField,
-		CodeField:       schema.CodeField,
-		StateField:      schema.StateField,
-		ProjectField:    schema.ProjectField,
+		Index:           []string{schema.idTField},
+		sourceField:     schema.sourceField,
+		dateMakeField:   schema.dateMakeField,
+		dateUpdateField: schema.dateUpdateField,
+		serieField:      schema.serieField,
+		codeField:       schema.codeField,
+		stateField:      schema.stateField,
+		projectField:    schema.projectField,
+		idTField:        schema.idTField,
 	}
+
+	result.DefineColum(schema.idTField, "_idT of the table", TpKey, "-1")
 
 	schema.AddModel(result)
 
@@ -101,17 +105,18 @@ func NewModelDb(database *Database, name, description string) *Model {
 		Database:        database,
 		Name:            name,
 		Description:     description,
-		Definition:      []*Column{},
+		Colums:          []*Column{},
 		PrimaryKeys:     []string{},
 		ForeignKey:      []*Constraint{},
 		Index:           []string{},
-		SourceField:     database.SourceField,
-		DateMakeField:   database.DateMakeField,
-		DateUpdateField: database.DateUpdateField,
-		SerieField:      database.SerieField,
-		CodeField:       database.CodeField,
-		StateField:      database.StateField,
-		ProjectField:    database.ProjectField,
+		sourceField:     database.SourceField,
+		dateMakeField:   database.DateMakeField,
+		dateUpdateField: database.DateUpdateField,
+		serieField:      database.SerieField,
+		codeField:       database.CodeField,
+		stateField:      database.StateField,
+		projectField:    database.ProjectField,
+		idTField:        database.IdTField,
 	}
 
 	database.AddModel(result)
@@ -119,11 +124,29 @@ func NewModelDb(database *Database, name, description string) *Model {
 	return result
 }
 
+// Definition return a json with the definition of the model
+func (m *Model) Definition() et.Json {
+	var columns []et.Json = []et.Json{}
+	for _, v := range m.Colums {
+		columns = append(columns, v.describe())
+	}
+
+	return et.Json{
+		"name":        m.Name,
+		"description": m.Description,
+		"table":       m.Table,
+		"columns":     columns,
+		"primaryKeys": m.PrimaryKeys,
+		"foreignKey":  m.ForeignKey,
+		"index":       m.Index,
+	}
+}
+
 // Find a column in the model
 func (m *Model) Column(name string) *Column {
 	idx := IndexColumn(m, name)
 	if idx >= 0 {
-		return m.Definition[idx]
+		return m.Colums[idx]
 	}
 
 	return nil

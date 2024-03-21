@@ -1,7 +1,6 @@
 package linq
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/cgalvisleon/et/et"
@@ -169,15 +168,18 @@ func (l *Linq) indexFrom(model *Model) int {
 }
 
 // AddFrom method to use in linq
-func (l *Linq) addFrom(model *Model) int {
+func (l *Linq) addFrom(model *Model) *Lfrom {
+	var result *Lfrom
 	idx := l.indexFrom(model)
 	if idx == -1 {
 		as := getAs(l)
-		l.Froms = append(l.Froms, &Lfrom{Linq: l, Model: model, As: as})
-		idx = len(l.Froms) - 1
+		result = &Lfrom{Linq: l, Model: model, As: as}
+		l.Froms = append(l.Froms, result)
+	} else {
+		result = l.Froms[idx]
 	}
 
-	return idx
+	return result
 }
 
 // From method to use in linq
@@ -188,10 +190,7 @@ func (l *Linq) From(model *Model) *Linq {
 }
 
 func (l *Linq) Debug() string {
-	r, err := json.Marshal(l)
-	if err != nil {
-		return err.Error()
-	}
+	r := l.Database.Definition()
 
-	return string(r)
+	return string(r.ToString())
 }

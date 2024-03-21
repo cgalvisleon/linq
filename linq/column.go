@@ -27,6 +27,8 @@ const (
 	TpBool
 	TpDateTime
 	TpJson
+	TpArray
+	TpSerie
 )
 
 // Validation tipe function
@@ -56,8 +58,8 @@ type Column struct {
 // IndexColumn return index of column in model
 func IndexColumn(model *Model, name string) int {
 	result := -1
-	for i, col := range model.Definition {
-		if col.Name == strs.Uppcase(name) {
+	for i, col := range model.Colums {
+		if strs.Uppcase(col.Name) == strs.Uppcase(name) {
 			result = i
 			break
 		}
@@ -69,25 +71,25 @@ func IndexColumn(model *Model, name string) int {
 func COlumn(model *Model, name string) *Column {
 	idx := IndexColumn(model, name)
 	if idx >= 0 {
-		return model.Definition[idx]
+		return model.Colums[idx]
 	}
 
 	return nil
 }
 
 // NewColumn create a new column
-func NewColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default any) *Column {
+func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default any) *Column {
 	idx := IndexColumn(model, name)
 
 	if idx >= 0 {
-		return model.Definition[idx]
+		return model.Colums[idx]
 	}
 
 	result := &Column{
 		Database:    model.Database,
 		Schema:      model.Schema,
 		Model:       model,
-		Name:        strs.Uppcase(name),
+		Name:        name,
 		Description: description,
 		TypeColumn:  typeColumm,
 		TypeData:    typeData,
@@ -98,51 +100,34 @@ func NewColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	}
 
 	if !model.UseSource {
-		model.UseSource = result.Name == model.SourceField
+		model.UseSource = result.Name == model.sourceField
 	}
 
 	if !model.UseDateMake {
-		model.UseDateMake = result.Name == model.DateMakeField
+		model.UseDateMake = result.Name == model.dateMakeField
 	}
 
 	if !model.UseDateUpdate {
-		model.UseDateUpdate = result.Name == model.DateUpdateField
+		model.UseDateUpdate = result.Name == model.dateUpdateField
 	}
 
 	if !model.UseSerie {
-		model.UseSerie = result.Name == model.SerieField
+		model.UseSerie = result.Name == model.serieField
 	}
 
 	if !model.UseCode {
-		model.UseCode = result.Name == model.CodeField
+		model.UseCode = result.Name == model.codeField
 	}
 
 	if !model.UseState {
-		model.UseState = result.Name == model.StateField
+		model.UseState = result.Name == model.stateField
 	}
 
 	if !model.UseProject {
-		model.UseState = result.Name == model.ProjectField
+		model.UseState = result.Name == model.projectField
 	}
 
-	model.Definition = append(model.Definition, result)
-
-	return result
-}
-
-// Newatrib create a new atrib
-func NewAtrib(model *Model, name, description string, typeData TypeData, _default any) *Column {
-	if !model.UseSource {
-		return nil
-	}
-
-	result := NewColumn(model, name, description, TpAtrib, typeData, _default)
-	if result != nil {
-		source := COlumn(model, model.SourceField)
-		if source != nil {
-			source.Atribs = append(source.Atribs, result)
-		}
-	}
+	model.Colums = append(model.Colums, result)
 
 	return result
 }
