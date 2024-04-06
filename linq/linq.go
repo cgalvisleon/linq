@@ -1,6 +1,7 @@
 package linq
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/cgalvisleon/et/et"
@@ -82,13 +83,13 @@ const (
 
 // Linq struct
 type Linq struct {
+	Db       *sql.DB
 	Froms    []*Lfrom
 	Selects  []*Lselect
 	Wheres   []*Lwhere
 	GroupsBy []*Lgroupby
 	Ordersby []*Lorderby
 	Joins    []*Ljoin
-	Database *Database
 	Tp       Lquery
 	Sql      string
 	Command  *Lcommand
@@ -137,13 +138,13 @@ func getAs(linq *Linq) string {
 // From method new linq
 func From(model *Model) *Linq {
 	result := &Linq{
+		Db:       model.Db,
 		Froms:    []*Lfrom{},
 		Selects:  []*Lselect{},
 		Wheres:   []*Lwhere{},
 		GroupsBy: []*Lgroupby{},
 		Ordersby: []*Lorderby{},
 		Joins:    []*Ljoin{},
-		Database: model.Database,
 		Sql:      "",
 		Command:  nil,
 	}
@@ -190,7 +191,6 @@ func (l *Linq) From(model *Model) *Linq {
 }
 
 func (l *Linq) Debug() string {
-	r := l.Database.Definition()
 
-	return string(r.ToString())
+	return l.Sql
 }

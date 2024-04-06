@@ -88,7 +88,6 @@ type Column struct {
 	TypeColumn  TypeColumn
 	TypeData    TypeData
 	Default     any
-	Database    *Database
 	Schema      *Schema
 	Model       *Model
 	Atribs      []*Column
@@ -119,8 +118,7 @@ func IndexColumn(model *Model, name string) int {
 	result := -1
 	for i, col := range model.Colums {
 		if strs.Uppcase(col.Name) == strs.Uppcase(name) {
-			result = i
-			break
+			return i
 		}
 	}
 
@@ -146,7 +144,6 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	}
 
 	result := &Column{
-		Database:    model.Database,
 		Schema:      model.Schema,
 		Model:       model,
 		Name:        name,
@@ -171,12 +168,8 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		model.UseDateUpdate = result.Name == model.dateUpdateField
 	}
 
-	if !model.UseSerie {
-		model.UseSerie = result.Name == model.serieField
-	}
-
-	if !model.UseCode {
-		model.UseCode = result.Name == model.codeField
+	if !model.UseIndex {
+		model.UseIndex = result.Name == model.indexField
 	}
 
 	if !model.UseState {
@@ -232,6 +225,11 @@ func (c *Column) Describe() et.Json {
 	}
 }
 
+// Indexed add a index to column
+func (c *Column) indexed(asc bool) {
+	c.Model.AddIndexColumn(c, asc)
+}
+
 // Resutn name of column in uppercase
 func (c *Column) Up() string {
 	return strs.Uppcase(c.Name)
@@ -244,29 +242,21 @@ func (c *Column) Low() string {
 
 // AddDependent add a column dependent
 func (c *Column) AddDependent(col *Column) {
-	idx := -1
-	for i, v := range c.Dependents {
+	for _, v := range c.Dependents {
 		if v.Model == col.Model && v.Up() == col.Up() {
-			idx = i
-			break
+			return
 		}
 	}
 
-	if idx == -1 {
-		c.Dependents = append(c.Dependents, col)
-	}
+	c.Dependents = append(c.Dependents, col)
 }
 
 func (c *Column) AddRefeence(col *Column) {
-	idx := -1
-	for i, v := range c.References {
+	for _, v := range c.References {
 		if v.Model == col.Model && v.Up() == col.Up() {
-			idx = i
-			break
+			return
 		}
 	}
 
-	if idx == -1 {
-		c.References = append(c.References, col)
-	}
+	c.References = append(c.References, col)
 }

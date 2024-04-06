@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"database/sql"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
@@ -48,7 +50,7 @@ type Model struct {
 	Description     string
 	Colums          []*Column
 	Schema          *Schema
-	Database        *Database
+	Db              *sql.DB
 	Table           string
 	PrimaryKeys     []*Column
 	ForeignKey      []*Constraint
@@ -56,7 +58,7 @@ type Model struct {
 	sourceField     string
 	dateMakeField   string
 	dateUpdateField string
-	serieField      string
+	indexField      string
 	codeField       string
 	stateField      string
 	projectField    string
@@ -64,8 +66,7 @@ type Model struct {
 	UseSource       bool
 	UseDateMake     bool
 	UseDateUpdate   bool
-	UseSerie        bool
-	UseCode         bool
+	UseIndex        bool
 	UseState        bool
 	UseProject      bool
 	BeforeInsert    []Trigger
@@ -81,9 +82,9 @@ type Model struct {
 }
 
 // NewModel create a new model
-func NewModel(schema *Schema, name, description string) *Model {
+func NewModel(schema *Schema, name, description string, version int) *Model {
 	result := &Model{
-		Database:        schema.Database,
+		Db:              schema.Db,
 		Schema:          schema,
 		Name:            strs.Uppcase(name),
 		Description:     description,
@@ -91,10 +92,11 @@ func NewModel(schema *Schema, name, description string) *Model {
 		PrimaryKeys:     []*Column{},
 		ForeignKey:      []*Constraint{},
 		Index:           []*Index{},
+		Version:         version,
 		sourceField:     schema.sourceField,
 		dateMakeField:   schema.dateMakeField,
 		dateUpdateField: schema.dateUpdateField,
-		serieField:      schema.serieField,
+		indexField:      schema.indexField,
 		codeField:       schema.codeField,
 		stateField:      schema.stateField,
 		projectField:    schema.projectField,
@@ -105,31 +107,6 @@ func NewModel(schema *Schema, name, description string) *Model {
 	result.AddIndex(schema.idTField)
 
 	schema.AddModel(result)
-
-	return result
-}
-
-// NewModelDb create a new model
-func NewModelDb(database *Database, name, description string) *Model {
-	result := &Model{
-		Database:        database,
-		Name:            name,
-		Description:     description,
-		Colums:          []*Column{},
-		PrimaryKeys:     []*Column{},
-		ForeignKey:      []*Constraint{},
-		Index:           []*Index{},
-		sourceField:     database.SourceField,
-		dateMakeField:   database.DateMakeField,
-		dateUpdateField: database.DateUpdateField,
-		serieField:      database.SerieField,
-		codeField:       database.CodeField,
-		stateField:      database.StateField,
-		projectField:    database.ProjectField,
-		idTField:        database.IdTField,
-	}
-
-	database.AddModel(result)
 
 	return result
 }
@@ -167,6 +144,29 @@ func (m *Model) C(name string) *Column {
 	return m.Column(name)
 }
 
+func (m *Model) AddIndexColumn(col *Column, asc bool) {
+	for _, v := range m.Index {
+		if v.Column.Up() == col.Up() {
+			return
+		}
+	}
+
+	col.Indexed = true
+	m.Index = append(m.Index, &Index{Column: col, Asc: asc})
+}
+
+// Add index column to the model
+func (m *Model) AddIndex(name string) *Column {
+	col := COlumn(m, name)
+	if col == nil {
+		return nil
+	}
+
+	m.AddIndexColumn(col, true)
+
+	return col
+}
+
 // Add primary key column to the model
 func (m *Model) AddPrimaryKey(name string) {
 	col := COlumn(m, name)
@@ -174,33 +174,24 @@ func (m *Model) AddPrimaryKey(name string) {
 		return
 	}
 
-	idx := -1
-	for i, v := range m.PrimaryKeys {
+	for _, v := range m.PrimaryKeys {
 		if v.Up() == strs.Uppcase(name) {
-			idx = i
-			break
+			return
 		}
 	}
 
-	if idx == -1 {
-		col.Indexed = true
-		col.PrimaryKey = true
-		m.PrimaryKeys = append(m.PrimaryKeys, col)
-	}
+	col.indexed(true)
+	col.Unique = true
+	col.PrimaryKey = true
+	m.PrimaryKeys = append(m.PrimaryKeys, col)
 }
 
 // Add foreign key to the model
 func (m *Model) AddForeignKey(name, description string, foreignKey []string, parentModel *Model, parentKey []string) {
-	idx := -1
-	for i, v := range m.ForeignKey {
+	for _, v := range m.ForeignKey {
 		if strs.Uppcase(v.Name) == strs.Uppcase(name) {
-			idx = i
-			break
+			return
 		}
-	}
-
-	if idx != -1 {
-		return
 	}
 
 	for _, n := range foreignKey {
@@ -214,39 +205,16 @@ func (m *Model) AddForeignKey(name, description string, foreignKey []string, par
 			return
 		}
 
-		colA.Indexed = true
+		colA.indexed(true)
 		colA.ForeignKey = true
 		colA.AddRefeence(colB)
 
-		colB.Indexed = true
+		colB.indexed(true)
 		colB.PrimaryKey = true
 		colB.AddDependent(colA)
 	}
 
 	m.ForeignKey = append(m.ForeignKey, &Constraint{Name: name, Description: description, ForeignKey: foreignKey, ParentModel: parentModel, ParentKey: parentKey})
-}
-
-// Add index column to the model
-func (m *Model) AddIndex(name string) *Column {
-	col := COlumn(m, name)
-	if col == nil {
-		return nil
-	}
-
-	idx := -1
-	for i, v := range m.Index {
-		if v.Column.Up() == strs.Uppcase(name) {
-			idx = i
-			break
-		}
-	}
-
-	if idx == -1 {
-		col.Indexed = true
-		m.Index = append(m.Index, &Index{Column: col, Asc: true})
-	}
-
-	return col
 }
 
 func (m *Model) Details(name, description string, _default any, details Details) *Column {

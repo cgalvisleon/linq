@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"database/sql"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
@@ -9,12 +11,12 @@ import (
 type Schema struct {
 	Name            string
 	Description     string
-	Database        *Database
+	Db              *sql.DB
 	Models          []*Model
 	sourceField     string
 	dateMakeField   string
 	dateUpdateField string
-	serieField      string
+	indexField      string
 	codeField       string
 	stateField      string
 	projectField    string
@@ -22,23 +24,19 @@ type Schema struct {
 }
 
 // NewSchema create a new schema
-func NewSchema(database *Database, name, description string) *Schema {
+func NewSchema(name, description string) *Schema {
 	result := &Schema{
-		Database:        database,
 		Name:            strs.Lowcase(name),
 		Description:     description,
 		Models:          []*Model{},
-		sourceField:     database.SourceField,
-		dateMakeField:   database.DateMakeField,
-		dateUpdateField: database.DateUpdateField,
-		serieField:      database.SerieField,
-		codeField:       database.CodeField,
-		stateField:      database.StateField,
-		projectField:    database.ProjectField,
-		idTField:        database.IdTField,
+		sourceField:     "_DATA",
+		dateMakeField:   "DATE_MAKE",
+		dateUpdateField: "DATE_UPDATE",
+		indexField:      "INDEX",
+		stateField:      "_STATE",
+		projectField:    "PROJECT_ID",
+		idTField:        "_IDT",
 	}
-
-	database.AddSchema(result)
 
 	return result
 }
@@ -70,6 +68,4 @@ func (s *Schema) AddModel(model *Model) {
 	if idx == -1 {
 		s.Models = append(s.Models, model)
 	}
-
-	s.Database.AddModel(model)
 }

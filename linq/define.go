@@ -33,6 +33,30 @@ func (m *Model) DefineIndex(index []string) *Model {
 	return m
 }
 
+// Define unique index in the model
+func (m *Model) DefineUniqueIndex(index []string) *Model {
+	for _, v := range index {
+		col := m.AddIndex(v)
+		if col != nil {
+			col.Unique = true
+		}
+	}
+
+	return m
+}
+
+// Define hidden columns in the model
+func (m *Model) DefineHidden(hiddens []string) *Model {
+	for _, v := range hiddens {
+		col := COlumn(m, v)
+		if col != nil {
+			col.Hidden = true
+		}
+	}
+
+	return m
+}
+
 // Define primary key in the model
 func (m *Model) DefinePrimaryKey(keys []string) *Model {
 	for _, v := range keys {
@@ -45,18 +69,6 @@ func (m *Model) DefinePrimaryKey(keys []string) *Model {
 // Define foreign key in the model
 func (m *Model) DefineForeignKey(name, description string, foreignKey []string, parentModel *Model, parentKey []string) *Model {
 	m.AddForeignKey(name, description, foreignKey, parentModel, parentKey)
-
-	return m
-}
-
-// Define unique index in the model
-func (m *Model) DefineUniqueIndex(index []string) *Model {
-	for _, v := range index {
-		col := m.AddIndex(v)
-		if col != nil {
-			col.Unique = true
-		}
-	}
 
 	return m
 }
@@ -89,16 +101,4 @@ func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Co
 	otherKey.AddDependent(thisKey)
 
 	return result
-}
-
-// Define hidden columns in the model
-func (m *Model) DefineHidden(hiddens []string) *Model {
-	for _, v := range hiddens {
-		col := COlumn(m, v)
-		if col != nil {
-			col.Hidden = true
-		}
-	}
-
-	return m
 }

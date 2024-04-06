@@ -6,14 +6,14 @@ import (
 )
 
 func main() {
-	database := linq.NewDatabase("database", "description", linq.Postgres)
-	schema := linq.NewSchema(database, "schema", "description")
-	A := linq.NewModel(schema, "User", "")
+	// database := jdb.NewDatabase("database", "description", jdb.Postgres)
+	schema := linq.NewSchema("schema", "description")
+	A := linq.NewModel(schema, "User", "", 1)
 	A.DefineColum("_id", "", linq.TpKey, "")
 	A.DefineColum("username", "", linq.TpString, "")
 	A.DefineColum("password", "", linq.TpString, "")
 
-	B := linq.NewModel(schema, "Model", "")
+	B := linq.NewModel(schema, "Model", "", 1)
 	B.DefineColum("_id", "", linq.TpKey, "")
 	B.DefineColum("name", "", linq.TpString, "")
 	B.DefineColum("description", "", linq.TpString, "")
