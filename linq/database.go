@@ -1,0 +1,161 @@
+package linq
+
+import (
+	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
+	"github.com/cgalvisleon/et/strs"
+)
+
+// Database struct used to define a database
+type Database struct {
+	Name        string
+	Description string
+	Driver      Driver
+	Schemes     []*Schema
+	Models      []*Model
+}
+
+// NewDatabase create a new database
+func NewDatabase(name, description string, drive Driver) *Database {
+	result := &Database{
+		Name:        strs.Lowcase(name),
+		Description: description,
+		Driver:      drive,
+		Schemes:     []*Schema{},
+		Models:      []*Model{},
+	}
+
+	return result
+}
+
+// Definition return a json with the definition of the database
+func (d *Database) Definition() et.Json {
+	var schemes []et.Json = []et.Json{}
+	var models []et.Json = []et.Json{}
+	for _, s := range d.Schemes {
+		schemes = append(schemes, s.Definition())
+		for _, m := range s.Models {
+			models = append(models, m.Definition())
+		}
+	}
+
+	return et.Json{
+		"name":        d.Name,
+		"description": d.Description,
+		"typeDriver":  d.Driver.Type(),
+		"schemes":     schemes,
+		"models":      models,
+	}
+}
+
+// AddSchema add a schema to the database
+func (d *Database) addSchema(schema *Schema) {
+	for _, v := range d.Schemes {
+		if v.Name == schema.Name {
+			return
+		}
+	}
+
+	schema.Db = d
+	d.Schemes = append(d.Schemes, schema)
+}
+
+// AddModel add a model to the database
+func (d *Database) InitModel(model *Model) error {
+	if d.Driver == nil {
+		return logs.Errorm("Driver is required")
+	}
+
+	for _, v := range d.Models {
+		if v.Name == model.Name {
+			return nil
+		}
+	}
+
+	model.Db = d
+	d.addSchema(model.Schema)
+	d.Models = append(d.Models, model)
+
+	return nil
+}
+
+// Connected to database
+func (d *Database) Connected(params et.Json) error {
+	if d.Driver == nil {
+		return logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.Connect(params)
+}
+
+// Disconnected to database
+func (d *Database) Disconnected() error {
+	if d.Driver == nil {
+		return logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.Disconnect()
+}
+
+// Query return a list of items
+func (d *Database) query(linq *Linq) (et.Items, error) {
+	if d.Driver == nil {
+		return et.Items{}, logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.Query(linq)
+}
+
+// QueryOne return a item
+func (d *Database) queryOne(linq *Linq) (et.Item, error) {
+	if d.Driver == nil {
+		return et.Item{}, logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.QueryOne(linq)
+}
+
+// QueryList return a list of items
+func (d *Database) queryList(linq *Linq) (et.List, error) {
+	if d.Driver == nil {
+		return et.List{}, logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.QueryList(linq)
+}
+
+// InsertSql return the sql to insert
+func (d *Database) insertSql(linq *Linq) (string, error) {
+	if d.Driver == nil {
+		return "", logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.InsertSql(linq)
+}
+
+// UpdateSql return the sql to update
+func (d *Database) updateSql(linq *Linq) (string, error) {
+	if d.Driver == nil {
+		return "", logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.UpdateSql(linq)
+}
+
+// DeleteSql return the sql to delete
+func (d *Database) deleteSql(linq *Linq) (string, error) {
+	if d.Driver == nil {
+		return "", logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.DeleteSql(linq)
+}
+
+// UpsetSql return the sql to upset
+func (d *Database) upsetSql(linq *Linq) (string, error) {
+	if d.Driver == nil {
+		return "", logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.UpsetSql(linq)
+}

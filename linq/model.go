@@ -1,8 +1,6 @@
 package linq
 
 import (
-	"database/sql"
-
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
@@ -50,7 +48,7 @@ type Model struct {
 	Description     string
 	Colums          []*Column
 	Schema          *Schema
-	Db              *sql.DB
+	Db              *Database
 	Table           string
 	PrimaryKeys     []*Column
 	ForeignKey      []*Constraint

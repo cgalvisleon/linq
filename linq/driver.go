@@ -1,8 +1,7 @@
-package jdb
+package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/linq"
 )
 
 type TypeDriver int
@@ -32,14 +31,15 @@ func (d TypeDriver) String() string {
 }
 
 type Driver interface {
+	Type() string
 	Connect(params et.Json) error
 	Disconnect() error
-	DDLModel(model *linq.Model) string
-	Select(linq *linq.Linq) (et.Items, error)
-	SelectOne(linq *linq.Linq) (et.Item, error)
-	SelectList(linq *linq.Linq) (et.List, error)
-	InsertSql(linq *linq.Linq) (string, error)
-	UpdateSql(linq *linq.Linq) (string, error)
-	DeleteSql(linq *linq.Linq) (string, error)
-	UpsetSql(linq *linq.Linq) (string, error)
+	DDLModel(model *Model) string
+	Query(linq *Linq) (et.Items, error)
+	QueryOne(linq *Linq) (et.Item, error)
+	QueryList(linq *Linq) (et.List, error)
+	InsertSql(linq *Linq) (string, error)
+	UpdateSql(linq *Linq) (string, error)
+	DeleteSql(linq *Linq) (string, error)
+	UpsetSql(linq *Linq) (string, error)
 }

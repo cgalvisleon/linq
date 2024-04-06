@@ -1,8 +1,6 @@
 package linq
 
 import (
-	"database/sql"
-
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
@@ -11,7 +9,7 @@ import (
 type Schema struct {
 	Name            string
 	Description     string
-	Db              *sql.DB
+	Db              *Database
 	Models          []*Model
 	sourceField     string
 	dateMakeField   string
@@ -57,15 +55,11 @@ func (s *Schema) Definition() et.Json {
 
 // AddModel add a model to the schema
 func (s *Schema) AddModel(model *Model) {
-	idx := -1
-	for i, v := range s.Models {
+	for _, v := range s.Models {
 		if v.Name == model.Name {
-			idx = i
-			break
+			return
 		}
 	}
 
-	if idx == -1 {
-		s.Models = append(s.Models, model)
-	}
+	s.Models = append(s.Models, model)
 }

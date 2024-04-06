@@ -1,7 +1,6 @@
 package linq
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/cgalvisleon/et/et"
@@ -83,7 +82,7 @@ const (
 
 // Linq struct
 type Linq struct {
-	Db       *sql.DB
+	Db       *Database
 	Froms    []*Lfrom
 	Selects  []*Lselect
 	Wheres   []*Lwhere
