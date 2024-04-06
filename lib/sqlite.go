@@ -16,15 +16,20 @@ type Sqlite struct {
 	Db       *sql.DB
 }
 
+// NewSqlite create a new sqlite driver
+func NewSqlite() Sqlite {
+	return Sqlite{}
+}
+
 // Type return the type of the driver
-func (d *Sqlite) Type() linq.TypeDriver {
-	return linq.Sqlite
+func (d *Sqlite) Type() string {
+	return linq.Sqlite.String()
 }
 
 // Connect to the database
-func (d *Sqlite) Connect(params et.Json) (*sql.DB, error) {
+func (d *Sqlite) Connect(params et.Json) error {
 	if params["database"] == nil {
-		return nil, logs.Errorm("Database is required")
+		return logs.Errorm("Database is required")
 	}
 
 	driver := "sqlite3"
@@ -33,17 +38,17 @@ func (d *Sqlite) Connect(params et.Json) (*sql.DB, error) {
 	var err error
 	d.Db, err = sql.Open(driver, d.Database)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = d.Db.Ping()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	logs.Infof("Connected to %s database %s", driver, d.Database)
 
-	return d.Db, nil
+	return nil
 }
 
 // Disconnect to the database
@@ -52,8 +57,18 @@ func (d *Sqlite) Disconnect() error {
 }
 
 // DDLModel return the ddl to create a model
-func (d *Sqlite) DDLModel(model *linq.Model) string {
-	return ""
+func (d *Sqlite) DDLModel(model *linq.Model) (string, error) {
+	return "", nil
+}
+
+// Exec the sql
+func (d *Sqlite) Exec(sql string) error {
+	_, err := d.Db.Exec(sql)
+	if err != nil {
+		return logs.Error(err)
+	}
+
+	return nil
 }
 
 // Query return a list of items

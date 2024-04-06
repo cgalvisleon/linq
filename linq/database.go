@@ -76,6 +76,16 @@ func (d *Database) InitModel(model *Model) error {
 	d.addSchema(model.Schema)
 	d.Models = append(d.Models, model)
 
+	sql, err := d.ddlModel(model)
+	if err != nil {
+		return err
+	}
+
+	err = d.Driver.Exec(sql)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -95,6 +105,15 @@ func (d *Database) Disconnected() error {
 	}
 
 	return d.Driver.Disconnect()
+}
+
+// DDLModel return the ddl to create a model
+func (d *Database) ddlModel(model *Model) (string, error) {
+	if d.Driver == nil {
+		return "", logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.DDLModel(model)
 }
 
 // Query return a list of items

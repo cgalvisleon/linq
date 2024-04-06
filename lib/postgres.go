@@ -20,31 +20,36 @@ type Postgres struct {
 	Db       *sql.DB
 }
 
+// NewPostgres create a new postgres driver
+func NewPostgres() Postgres {
+	return Postgres{}
+}
+
 // Type return the type of the driver
-func (d *Postgres) Type() linq.TypeDriver {
-	return linq.Postgres
+func (d *Postgres) Type() string {
+	return linq.Postgres.String()
 }
 
 // Connect to the database
-func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
+func (d *Postgres) Connect(params et.Json) error {
 	if params["host"] == nil {
-		return nil, logs.Errorm("Host is required")
+		return logs.Errorm("Host is required")
 	}
 
 	if params["port"] == nil {
-		return nil, logs.Errorm("Port is required")
+		return logs.Errorm("Port is required")
 	}
 
 	if params["user"] == nil {
-		return nil, logs.Errorm("User is required")
+		return logs.Errorm("User is required")
 	}
 
 	if params["password"] == nil {
-		return nil, logs.Errorm("Password is required")
+		return logs.Errorm("Password is required")
 	}
 
 	if params["database"] == nil {
-		return nil, logs.Errorm("Database is required")
+		return logs.Errorm("Database is required")
 	}
 
 	driver := "postgres"
@@ -58,12 +63,12 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 	connStr := strs.Format(`%s://%s:%s@%s:%d/%s?sslmode=disable`, driver, d.user, password, d.Host, d.Port, d.Database)
 	d.Db, err = sql.Open(driver, connStr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	logs.Infof("Connected to %s database %s", driver, d.Database)
 
-	return d.Db, nil
+	return nil
 }
 
 // Disconnect to the database
@@ -72,8 +77,18 @@ func (d *Postgres) Disconnect() error {
 }
 
 // DDLModel return the ddl to create the model
-func (d *Postgres) DDLModel(model *linq.Model) string {
-	return ""
+func (d *Postgres) DDLModel(model *linq.Model) (string, error) {
+	return "", nil
+}
+
+// Exec execute a sql
+func (d *Postgres) Exec(sql string) error {
+	_, err := d.Db.Exec(sql)
+	if err != nil {
+		logs.Error(err)
+	}
+
+	return nil
 }
 
 // Query return a list of items
@@ -113,9 +128,4 @@ func (d *Postgres) DeleteSql(linq *linq.Linq) (string, error) {
 func (d *Postgres) UpsetSql(linq *linq.Linq) (string, error) {
 
 	return "", nil
-}
-
-// NewPostgres create a new postgres driver
-func NewPostgres() *Postgres {
-	return &Postgres{}
 }
