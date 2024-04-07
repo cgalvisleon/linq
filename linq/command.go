@@ -47,3 +47,53 @@ func (l *Lcommand) Definition() et.Json {
 		"update":  l.Update,
 	}
 }
+
+// Insert method to use in linq
+func (m *Model) Insert(data *et.Json) *Linq {
+	l := From(m)
+	l.TypeQuery = TpCommand
+	l.Command = &Lcommand{
+		From:    l.Froms[0],
+		Command: TpInsert,
+		Data:    data,
+		New:     &et.Json{},
+		Update:  &et.Json{},
+	}
+
+	return l
+}
+
+// Update method to use in linq
+func (m *Model) Update(data *et.Json) *Linq {
+	l := From(m)
+	l.TypeQuery = TpCommand
+	l.Command = &Lcommand{
+		From:    l.Froms[0],
+		Command: TpUpdate,
+		Data:    data,
+		New:     &et.Json{},
+		Update:  &et.Json{},
+	}
+
+	return l
+}
+
+// Delete method to use in linq
+func (m *Model) Delete() *Linq {
+	l := From(m)
+	l.TypeQuery = TpCommand
+	l.Command = &Lcommand{
+		From:    l.Froms[0],
+		Command: TpDelete,
+		Data:    &et.Json{},
+		New:     &et.Json{},
+		Update:  &et.Json{},
+	}
+
+	return l
+}
+
+func (l *Linq) Exec() error {
+
+	return nil
+}

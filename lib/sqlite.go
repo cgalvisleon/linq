@@ -66,12 +66,12 @@ func (d *Sqlite) DDLModel(model *linq.Model) (string, error) {
 }
 
 // Exec the sql
-func (d *Sqlite) Exec(sql string) error {
+func (d *Sqlite) Exec(sql string, args ...any) error {
 	if !d.Connected {
 		return logs.Errorm("Not connected to database")
 	}
 
-	_, err := d.Db.Exec(sql)
+	_, err := d.Db.Exec(sql, args...)
 	if err != nil {
 		return logs.Error(err)
 	}
@@ -80,7 +80,7 @@ func (d *Sqlite) Exec(sql string) error {
 }
 
 // Query return a list of items
-func (d *Sqlite) Query(linq *linq.Linq) (et.Items, error) {
+func (d *Sqlite) Query(sql string, args ...any) (et.Items, error) {
 	if !d.Connected {
 		return et.Items{}, logs.Errorm("Not connected to database")
 	}
@@ -89,7 +89,7 @@ func (d *Sqlite) Query(linq *linq.Linq) (et.Items, error) {
 }
 
 // QueryOne return a item
-func (d *Sqlite) QueryOne(linq *linq.Linq) (et.Item, error) {
+func (d *Sqlite) QueryOne(sql string, args ...any) (et.Item, error) {
 	if !d.Connected {
 		return et.Item{}, logs.Errorm("Not connected to database")
 	}

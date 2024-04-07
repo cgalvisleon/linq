@@ -128,40 +128,6 @@ func (m *Model) Data(sel ...any) *Linq {
 	return result
 }
 
-// Select  columns a query
-func (l *Linq) Select(sel ...any) (et.Items, error) {
-	l.TypeSelect = TpRow
-	for _, col := range sel {
-		switch v := col.(type) {
-		case Column:
-			l.addSelect(v.Model, v.Name)
-		case *Column:
-			l.addSelect(v.Model, v.Name)
-		case string:
-			sp := strings.Split(v, ".")
-			if len(sp) > 1 {
-				n := sp[0]
-				m := l.Db.Model(n)
-				if m != nil {
-					l.addSelect(m, sp[1])
-				}
-			} else {
-				m := l.Froms[0].Model
-				l.addSelect(m, v)
-			}
-		}
-	}
-
-	return l.Find()
-}
-
-func (l *Linq) Data(sel ...any) (et.Items, error) {
-	l.Select(sel...)
-	l.TypeSelect = TpData
-
-	return l.Find()
-}
-
 // Numeric function to use in linq
 
 // Count function to use in linq
@@ -208,9 +174,10 @@ func (l *Linq) Min(col *Column) *Linq {
 func (l *Linq) Take(n int) (et.Items, error) {
 	l.Limit = n
 
-	return l.Find()
+	return l.Query()
 }
 
+// Select skip n element data
 func (l *Linq) Skip(n int) (et.Items, error) {
 	l.TypeQuery = TpSkip
 	l.Rows = 1
@@ -233,30 +200,11 @@ func (l *Linq) Skip(n int) (et.Items, error) {
 	return result, nil
 }
 
-// Select query
-func (l *Linq) Find() (et.Items, error) {
-	var err error
-	l.Sql, err = l.selectSql()
-	if err != nil {
-		return et.Items{}, err
-	}
-
-	result, err := l.Query()
-	if err != nil {
-		return et.Items{}, err
-	}
-
-	for _, data := range result.Result {
-		l.GetDetails(&data)
-	}
-
-	return result, nil
-}
-
 // Select query all data
 func (l *Linq) All() (et.Items, error) {
 	l.Limit = 0
-	return l.Find()
+
+	return l.Query()
 }
 
 // Select query first data
@@ -300,7 +248,8 @@ func (l *Linq) Page(page, rows int) (et.Items, error) {
 	offset := (page - 1) * rows
 	l.Rows = rows
 	l.Offset = offset
-	return l.Find()
+
+	return l.Query()
 }
 
 // Select query list, include count, page and rows
@@ -311,7 +260,7 @@ func (l *Linq) List(page, rows int) (et.List, error) {
 		return et.List{}, err
 	}
 
-	item, err := l.QueryOne()
+	item, err := l.queryOne()
 	if err != nil {
 		return et.List{}, err
 	}
@@ -324,4 +273,39 @@ func (l *Linq) List(page, rows int) (et.List, error) {
 	}
 
 	return items.ToList(all, page, rows), nil
+}
+
+// Select  columns a query
+func (l *Linq) Select(sel ...any) (et.Items, error) {
+	l.TypeSelect = TpRow
+	for _, col := range sel {
+		switch v := col.(type) {
+		case Column:
+			l.addSelect(v.Model, v.Name)
+		case *Column:
+			l.addSelect(v.Model, v.Name)
+		case string:
+			sp := strings.Split(v, ".")
+			if len(sp) > 1 {
+				n := sp[0]
+				m := l.Db.Model(n)
+				if m != nil {
+					l.addSelect(m, sp[1])
+				}
+			} else {
+				m := l.Froms[0].Model
+				l.addSelect(m, v)
+			}
+		}
+	}
+
+	return l.Query()
+}
+
+// Select SourceField a linq with data
+func (l *Linq) Data(sel ...any) (et.Items, error) {
+	l.Select(sel...)
+	l.TypeSelect = TpData
+
+	return l.Query()
 }

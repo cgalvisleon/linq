@@ -35,9 +35,9 @@ type Driver interface {
 	Connect(params et.Json) error
 	Disconnect() error
 	DDLModel(model *Model) (string, error)
-	Exec(sql string) error
-	Query(linq *Linq) (et.Items, error)
-	QueryOne(linq *Linq) (et.Item, error)
+	Exec(sql string, args ...any) error
+	Query(sql string, args ...any) (et.Items, error)
+	QueryOne(sql string, args ...any) (et.Item, error)
 	CountSql(linq *Linq) (string, error)
 	SelectSql(linq *Linq) (string, error)
 	InsertSql(linq *Linq) (string, error)

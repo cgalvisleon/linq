@@ -227,11 +227,11 @@ func (l *Linq) deleteSql() (string, error) {
 }
 
 // Execute query and return items
-func (l *Linq) Query() (et.Items, error) {
-	return l.Db.Query(l)
+func (l *Linq) query() (et.Items, error) {
+	return l.Db.Query(l.Sql)
 }
 
 // Execute query and return item
-func (l *Linq) QueryOne() (et.Item, error) {
-	return l.Db.QueryOne(l)
+func (l *Linq) queryOne() (et.Item, error) {
+	return l.Db.QueryOne(l.Sql)
 }

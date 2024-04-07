@@ -127,29 +127,29 @@ func (d *Database) ddlModel(model *Model) (string, error) {
 }
 
 // Query return a list of items
-func (d *Database) Query(linq *Linq) (et.Items, error) {
+func (d *Database) Query(sql string, args ...any) (et.Items, error) {
 	if d.Driver == nil {
 		return et.Items{}, logs.Errorm("Driver is required")
 	}
 
-	if len(linq.Sql) == 0 {
+	if len(sql) == 0 {
 		return et.Items{}, logs.Errorm("Sql is required")
 	}
 
-	return d.Driver.Query(linq)
+	return d.Driver.Query(sql, args...)
 }
 
 // QueryOne return a item
-func (d *Database) QueryOne(linq *Linq) (et.Item, error) {
+func (d *Database) QueryOne(sql string, args ...any) (et.Item, error) {
 	if d.Driver == nil {
 		return et.Item{}, logs.Errorm("Driver is required")
 	}
 
-	if len(linq.Sql) == 0 {
+	if len(sql) == 0 {
 		return et.Item{}, logs.Errorm("Sql is required")
 	}
 
-	return d.Driver.QueryOne(linq)
+	return d.Driver.QueryOne(sql, args...)
 }
 
 // CountSql return the sql to count

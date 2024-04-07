@@ -1,6 +1,10 @@
 package linq
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/cgalvisleon/et/et"
+)
 
 func (l *Linq) addRetuns(model *Model, name string) *Lselect {
 	column := COlumn(model, name)
@@ -20,7 +24,7 @@ func (l *Linq) addRetuns(model *Model, name string) *Lselect {
 	return result
 }
 
-func (l *Linq) REturns(sel ...any) *Linq {
+func (l *Linq) REturns(sel ...any) (et.Items, error) {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
@@ -42,5 +46,5 @@ func (l *Linq) REturns(sel ...any) *Linq {
 		}
 	}
 
-	return l
+	return l.Query()
 }

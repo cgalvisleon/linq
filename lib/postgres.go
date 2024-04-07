@@ -78,12 +78,12 @@ func (d *Postgres) DDLModel(model *linq.Model) (string, error) {
 }
 
 // Exec execute a sql
-func (d *Postgres) Exec(sql string) error {
+func (d *Postgres) Exec(sql string, args ...any) error {
 	if !d.Connected {
 		return logs.Errorm("Db not connected")
 	}
 
-	_, err := d.Db.Exec(sql)
+	_, err := d.Db.Exec(sql, args...)
 	if err != nil {
 		logs.Error(err)
 	}
@@ -92,7 +92,7 @@ func (d *Postgres) Exec(sql string) error {
 }
 
 // Query return a list of items
-func (d *Postgres) Query(linq *linq.Linq) (et.Items, error) {
+func (d *Postgres) Query(lsql string, args ...any) (et.Items, error) {
 	if !d.Connected {
 		return et.Items{}, logs.Errorm("Db not connected")
 	}
@@ -101,7 +101,7 @@ func (d *Postgres) Query(linq *linq.Linq) (et.Items, error) {
 }
 
 // QueryOne return a item
-func (d *Postgres) QueryOne(linq *linq.Linq) (et.Item, error) {
+func (d *Postgres) QueryOne(sql string, args ...any) (et.Item, error) {
 	if !d.Connected {
 		return et.Item{}, logs.Errorm("Db not connected")
 	}
