@@ -27,7 +27,7 @@ func (m *Model) DefineAtrib(name, description string, typeData TypeData, _defaul
 // Define index in the model
 func (m *Model) DefineIndex(index []string) *Model {
 	for _, v := range index {
-		m.AddIndex(v)
+		m.AddIndex(v, true)
 	}
 
 	return m
@@ -36,7 +36,7 @@ func (m *Model) DefineIndex(index []string) *Model {
 // Define unique index in the model
 func (m *Model) DefineUniqueIndex(index []string) *Model {
 	for _, v := range index {
-		col := m.AddIndex(v)
+		col := m.AddIndex(v, true)
 		if col != nil {
 			col.Unique = true
 		}
@@ -83,7 +83,7 @@ func (m *Model) DefineReference(thisKey *Column, name string, otherKey, column *
 	result.Reference = &Reference{thisKey, name, otherKey, column}
 	thisKey.Hidden = !showThisKey
 	thisKey.AddRefeence(otherKey)
-	m.AddIndex(thisKey.Name)
+	m.AddIndexColumn(thisKey, true)
 	otherKey.AddDependent(thisKey)
 
 	return result
@@ -97,7 +97,7 @@ func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Co
 
 	result.Reference = &Reference{thisKey, name, otherKey, column}
 	thisKey.AddRefeence(otherKey)
-	m.AddIndex(thisKey.Name)
+	m.AddIndexColumn(thisKey, true)
 	otherKey.AddDependent(thisKey)
 
 	return result

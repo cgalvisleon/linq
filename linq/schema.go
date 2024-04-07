@@ -56,7 +56,7 @@ func (s *Schema) Definition() et.Json {
 // AddModel add a model to the schema
 func (s *Schema) AddModel(model *Model) {
 	for _, v := range s.Models {
-		if v.Name == model.Name {
+		if v == model {
 			return
 		}
 	}

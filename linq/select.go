@@ -2,32 +2,67 @@ package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/strs"
 )
 
-// Add column to select by name
-func (l *Linq) addSelect(model *Model, name string) *Lselect {
-	var result *Lselect
-	idxC := IndexColumn(model, name)
-	if idxC == -1 {
-		return result
-	}
+// Select struct to use in linq
+type Lselect struct {
+	Linq   *Linq
+	From   *Lfrom
+	Column *Column
+	AS     string
+}
 
-	idx := -1
-	for i, v := range l.Selects {
-		if v.Column.Model == model && v.Column.Up() == strs.Uppcase(name) {
-			idx = i
-			break
+// Definition method to use in linq
+func (l *Lselect) Definition() et.Json {
+	return et.Json{
+		"form":   l.From.Definition(),
+		"column": l.Column.Name,
+		"as":     l.AS,
+	}
+}
+
+// As method to use set as name to column in linq
+func (l *Lselect) As(name string) *Lselect {
+	l.AS = name
+
+	return l
+}
+
+// Details method to use in linq
+func (l *Lselect) Details(data *et.Json) {
+	l.Column.Details(l.Column, data)
+}
+
+// Add column to select by name
+func (l *Linq) addColumn(column *Column) *Lselect {
+	for _, v := range l.Columns {
+		if v.Column == column {
+			return v
 		}
 	}
 
-	if idx == -1 {
-		lform := l.addFrom(model)
-		result = &Lselect{Linq: l, Column: model.Colums[idxC], As: lform.As}
-		l.Selects = append(l.Selects, result)
-	} else {
-		result = l.Selects[idx]
+	lform := l.addFrom(column.Model)
+	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name}
+	l.Columns = append(l.Columns, result)
+
+	return result
+}
+
+// Add column to select by name
+func (l *Linq) addSelect(model *Model, name string) *Lselect {
+	column := COlumn(model, name)
+	if column == nil {
+		return nil
 	}
+
+	for _, v := range l.Selects {
+		if v.Column == column {
+			return v
+		}
+	}
+
+	result := l.addColumn(column)
+	l.Selects = append(l.Selects, result)
 
 	return result
 }
@@ -35,7 +70,7 @@ func (l *Linq) addSelect(model *Model, name string) *Lselect {
 // Select columns to use in linq
 func (m *Model) Select(sel ...any) *Linq {
 	r := From(m)
-	r.Tp = TpRow
+	r.TypeSelect = TpRow
 
 	for _, col := range sel {
 		switch v := col.(type) {
@@ -55,14 +90,15 @@ func (m *Model) Select(sel ...any) *Linq {
 func (m *Model) Data(sel ...any) *Linq {
 	result := m.Select(sel...)
 	if m.UseSource {
-		result.Tp = TpData
+		result.TypeSelect = TpData
 	}
 
 	return result
 }
 
-// Select query
-func (l *Linq) Find() (et.Items, error) {
+// Select query take n element data
+func (l *Linq) Take(n int) (et.Items, error) {
+	l.Limit = n
 	var err error
 	l.Sql, err = l.selectSql()
 	if err != nil {
@@ -81,22 +117,41 @@ func (l *Linq) Find() (et.Items, error) {
 	return result, nil
 }
 
-// Select query all data
-func (l *Linq) All() (et.Items, error) {
-	l.Limit = 0
-	return l.Find()
+func (l *Linq) Skip(n int) (et.Items, error) {
+	l.TypeQuery = TpSkip
+	l.Rows = 1
+	l.Offset = n
+	var err error
+	l.Sql, err = l.selectSql()
+	if err != nil {
+		return et.Items{}, err
+	}
+
+	result, err := l.query()
+	if err != nil {
+		return et.Items{}, err
+	}
+
+	for _, data := range result.Result {
+		l.GetDetails(&data)
+	}
+
+	return result, nil
 }
 
-// Select query take n element data
-func (l *Linq) Take(n int) (et.Items, error) {
-	l.Limit = n
+// Select query
+func (l *Linq) Find() (et.Items, error) {
+	return l.Take(0)
+}
+
+// Select query all data
+func (l *Linq) All() (et.Items, error) {
 	return l.Find()
 }
 
 // Select query first data
 func (l *Linq) First() (et.Item, error) {
-	l.Limit = 1
-	items, err := l.Find()
+	items, err := l.Take(1)
 	if err != nil {
 		return et.Item{}, err
 	}
@@ -111,14 +166,36 @@ func (l *Linq) First() (et.Item, error) {
 	}, nil
 }
 
+// Select query type last data
+func (l *Linq) Last() (et.Item, error) {
+	l.TypeQuery = TpLast
+	items, err := l.Take(1)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if !items.Ok {
+		return et.Item{}, nil
+	}
+
+	return et.Item{
+		Ok:     items.Ok,
+		Result: items.Result[0],
+	}, nil
+}
+
+// Select query type page data
 func (l *Linq) Page(page, rows int) (et.Items, error) {
+	l.TypeQuery = TpPage
 	offset := (page - 1) * rows
 	l.Rows = rows
 	l.Offset = offset
 	return l.Find()
 }
 
+// Select query type count data
 func (l *Linq) Count() (int, error) {
+	l.TypeQuery = TpCount
 	var err error
 	l.Sql, err = l.countSql()
 	if err != nil {
@@ -135,6 +212,7 @@ func (l *Linq) Count() (int, error) {
 	return result, nil
 }
 
+// Select query list, include count, page and rows
 func (l *Linq) List(page, rows int) (et.List, error) {
 	all, err := l.Count()
 	if err != nil {

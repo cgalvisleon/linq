@@ -2,6 +2,7 @@ package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -85,6 +86,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		Db:              schema.Db,
 		Schema:          schema,
 		Name:            strs.Uppcase(name),
+		Table:           schema.Name + "." + strs.Uppcase(name),
 		Description:     description,
 		Colums:          []*Column{},
 		PrimaryKeys:     []*Column{},
@@ -101,8 +103,8 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		idTField:        schema.idTField,
 	}
 
-	result.DefineColum(schema.idTField, "_idT of the table", TpKey, "-1")
-	result.AddIndex(schema.idTField)
+	_idT := result.DefineColum(result.idTField, "_idT of the table", TpKey, "-1")
+	result.AddIndexColumn(_idT, true)
 
 	schema.AddModel(result)
 
@@ -116,15 +118,24 @@ func (m *Model) Definition() et.Json {
 		columns = append(columns, v.describe())
 	}
 
-	return et.Json{
+	var index []et.Json = []et.Json{}
+	for _, v := range m.Index {
+		index = append(index, et.Json{"column": v.Column.Name, "asc": v.Asc})
+	}
+
+	result := et.Json{
 		"name":        m.Name,
 		"description": m.Description,
 		"table":       m.Table,
 		"columns":     columns,
 		"primaryKeys": m.PrimaryKeys,
 		"foreignKey":  m.ForeignKey,
-		"index":       m.Index,
+		"index":       index,
 	}
+
+	logs.Info("Model: ", result.ToString())
+
+	return result
 }
 
 // Find a column in the model
@@ -150,7 +161,7 @@ func (m *Model) Col(name string) *Column {
 // Add index column to the model
 func (m *Model) AddIndexColumn(col *Column, asc bool) {
 	for _, v := range m.Index {
-		if v.Column.Up() == col.Up() {
+		if v.Column == col {
 			return
 		}
 	}
@@ -160,13 +171,13 @@ func (m *Model) AddIndexColumn(col *Column, asc bool) {
 }
 
 // Add index column by name to the model
-func (m *Model) AddIndex(name string) *Column {
+func (m *Model) AddIndex(name string, asc bool) *Column {
 	col := COlumn(m, name)
 	if col == nil {
 		return nil
 	}
 
-	m.AddIndexColumn(col, true)
+	m.AddIndexColumn(col, asc)
 
 	return col
 }

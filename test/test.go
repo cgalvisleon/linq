@@ -34,6 +34,11 @@ func main() {
 		logs.Errorm("Error")
 	}
 
-	linq.From(A).
+	l := linq.From(A).
 		Debug()
+
+	s := l.Definition()
+	logs.Debug(A.Definition().ToString())
+	logs.Debug(B.Definition().ToString())
+	logs.Debug(s.ToString())
 }

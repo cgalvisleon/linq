@@ -1,8 +1,6 @@
 package linq
 
 import (
-	"fmt"
-
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
 )
@@ -11,191 +9,175 @@ import (
 type Lfrom struct {
 	Linq  *Linq
 	Model *Model
-	As    string
+	AS    string
 }
 
-// Select struct to use in linq
-type Lselect struct {
-	Linq   *Linq
-	Column *Column
-	As     string
+// Definition method to use in linq
+func (l *Lfrom) Definition() et.Json {
+	model := et.Json{}
+	if l.Model != nil {
+		model = l.Model.Definition()
+	}
+
+	return et.Json{
+		"model": model,
+		"as":    l.AS,
+	}
 }
 
-func (l *Lselect) Details(data *et.Json) {
-	l.Column.Details(l.Column, data)
-}
+// As method to use set as name to from in linq
+func (l *Lfrom) As(name string) *Lfrom {
+	l.AS = name
 
-// Where struct to use in linq
-type Lwhere struct {
-	Linq     *Linq
-	Column   *Column
-	Operator string
-	Value    interface{}
-	Connetor string
+	return l
 }
 
 // GroupBy struct to use in linq
-type Lgroupby struct {
+type Lgroup struct {
 	Linq   *Linq
 	Column *Column
 	As     string
 }
 
-// OrderBy struct to use in linq
-type Lorderby struct {
-	Linq   *Linq
-	Column *Column
-	Asc    bool
+// Definition method to use in linq
+func (l *Lgroup) Definition() et.Json {
+	return et.Json{
+		"column": l.Column.Name,
+		"as":     l.As,
+	}
 }
 
-// Join struct to use in linq
-type Ljoin struct{}
+// TypeQuery struct to use in linq
+type TypeQuery int
 
-// Union struct to use in linq
-type Lunion struct{}
-
-// Intersect struct to use in linq
-type Lintersect struct{}
-
-// Except struct to use in linq
-type Lexcept struct{}
-
-// TypeCommand struct to use in linq
-type TypeCommand int
-
+// Values for TypeQuery
 const (
-	TpInsert TypeCommand = iota
-	TpUpdate
-	TpDelete
+	TpSelect TypeQuery = iota
+	TpCommand
+	TpCount
+	TpLast
+	TpSkip
+	TpPage
 )
 
-// Command struct to use in linq
-type Lcommand struct {
-	From    *Lfrom
-	Command TypeCommand
-	Data    et.Json
-	New     et.Json
-	Update  et.Json
+// String method to use in linq
+func (d TypeQuery) String() string {
+	switch d {
+	case TpSelect:
+		return "select"
+	case TpCommand:
+		return "command"
+	case TpCount:
+		return "count"
+	case TpLast:
+		return "last"
+	case TpSkip:
+		return "skip"
+	case TpPage:
+		return "page"
+	}
+	return ""
 }
 
-type Lquery int
+// TypeSelect struct to use in linq
+type TypeSelect int
 
+// Values for TypeSelect
 const (
-	TpData Lquery = iota
+	TpData TypeSelect = iota
 	TpRow
 )
 
+func (d TypeSelect) String() string {
+	switch d {
+	case TpData:
+		return "data"
+	case TpRow:
+		return "row"
+	}
+	return ""
+}
+
 // Linq struct
 type Linq struct {
-	Db       *Database
-	Froms    []*Lfrom
-	Selects  []*Lselect
-	Details  []*Lselect
-	Wheres   []*Lwhere
-	GroupsBy []*Lgroupby
-	Ordersby []*Lorderby
-	Joins    []*Ljoin
-	Limit    int
-	Rows     int
-	Offset   int
-	Tp       Lquery
-	Sql      string
-	Command  *Lcommand
+	Db         *Database
+	as         int
+	Froms      []*Lfrom
+	Columns    []*Lselect
+	Selects    []*Lselect
+	Details    []*Lselect
+	Wheres     []*Lwhere
+	Groups     []*Lgroup
+	Orders     []*Lorder
+	Joins      []*Ljoin
+	Union      []*Linq
+	Limit      int
+	Rows       int
+	Offset     int
+	Command    *Lcommand
+	TypeSelect TypeSelect
+	TypeQuery  TypeQuery
+	Sql        string
 }
 
-// As method to use in linq from return leter string
-func getAs(linq *Linq) string {
-	n := len(linq.Froms)
-
-	limit := 18251
-	base := 26
-	as := ""
-	a := n % base
-	b := n / base
-	c := b / base
-
-	if n >= limit {
-		n = n - limit + 702
-		a = n % base
-		b = n / base
-		c = b / base
-		b = b / base
-		a = 65 + a
-		b = 65 + b - 1
-		c = 65 + c - 1
-		as = fmt.Sprintf(`A%c%c%c`, rune(c), rune(b), rune(a))
-	} else if b > base {
-		b = b / base
-		a = 65 + a
-		b = 65 + b - 1
-		c = 65 + c - 1
-		as = fmt.Sprintf(`%c%c%c`, rune(c), rune(b), rune(a))
-	} else if b > 0 {
-		a = 65 + a
-		b = 65 + b - 1
-		as = fmt.Sprintf(`%c%c`, rune(b), rune(a))
-	} else {
-		a = 65 + a
-		as = fmt.Sprintf(`%c`, rune(a))
+func (l *Linq) Definition() *et.Json {
+	var froms []et.Json = []et.Json{}
+	for _, f := range l.Froms {
+		froms = append(froms, f.Definition())
 	}
 
-	return as
-
-}
-
-// From method new linq
-func From(model *Model) *Linq {
-	result := &Linq{
-		Db:       model.Db,
-		Froms:    []*Lfrom{},
-		Selects:  []*Lselect{},
-		Wheres:   []*Lwhere{},
-		GroupsBy: []*Lgroupby{},
-		Ordersby: []*Lorderby{},
-		Joins:    []*Ljoin{},
-		Sql:      "",
-		Command:  nil,
+	var columns []et.Json = []et.Json{}
+	for _, c := range l.Columns {
+		columns = append(columns, c.Definition())
 	}
 
-	as := getAs(result)
-	result.Froms = append(result.Froms, &Lfrom{Linq: result, Model: model, As: as})
-
-	return result
-}
-
-// Get index model in linq
-func (l *Linq) indexFrom(model *Model) int {
-	result := -1
-	for i, f := range l.Froms {
-		if f.Model == model {
-			result = i
-			break
-		}
+	var selects []et.Json = []et.Json{}
+	for _, s := range l.Selects {
+		selects = append(selects, s.Definition())
 	}
 
-	return result
-}
-
-// AddFrom method to use in linq
-func (l *Linq) addFrom(model *Model) *Lfrom {
-	var result *Lfrom
-	idx := l.indexFrom(model)
-	if idx == -1 {
-		as := getAs(l)
-		result = &Lfrom{Linq: l, Model: model, As: as}
-		l.Froms = append(l.Froms, result)
-	} else {
-		result = l.Froms[idx]
+	var wheres []et.Json = []et.Json{}
+	for _, w := range l.Wheres {
+		wheres = append(wheres, w.Definition())
 	}
 
-	return result
-}
+	var groups []et.Json = []et.Json{}
+	for _, g := range l.Groups {
+		groups = append(groups, g.Definition())
+	}
 
-// From method to use in linq
-func (l *Linq) From(model *Model) *Linq {
-	l.addFrom(model)
+	var orders []et.Json = []et.Json{}
+	for _, o := range l.Orders {
+		orders = append(orders, o.Definition())
+	}
 
-	return l
+	var joins []et.Json = []et.Json{}
+	for _, j := range l.Joins {
+		joins = append(joins, j.Definition())
+	}
+
+	var unions []et.Json = []et.Json{}
+	for _, u := range l.Union {
+		unions = append(unions, *u.Definition())
+	}
+
+	return &et.Json{
+		"as":         l.as,
+		"froms":      froms,
+		"columns":    columns,
+		"selects":    selects,
+		"wheres":     wheres,
+		"groups":     groups,
+		"orders":     orders,
+		"joins":      joins,
+		"limit":      l.Limit,
+		"rows":       l.Rows,
+		"offset":     l.Offset,
+		"command":    l.Command.Definition(),
+		"typeSelect": l.TypeSelect.String(),
+		"typeQuery":  l.TypeQuery.String(),
+		"sql":        l.Sql,
+	}
 }
 
 // AddSelect method to use in linq
