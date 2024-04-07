@@ -121,31 +121,37 @@ func (d *Postgres) QueryOne(sql string, args ...any) (et.Item, error) {
 }
 
 // CountSql return the sql to count
-func (d *Postgres) CountSql(linq *linq.Linq) (string, error) {
+func (d *Postgres) CountSql(l *linq.Linq) (string, error) {
+	if len(l.Froms) == 0 {
+		return "", logs.Errorm("From is required")
+	}
 
-	return "", nil
+	table := l.Froms[0].Model.Table
+	l.Sql = strs.Format(`SELECT COUNT(*) FROM %s`, table)
+
+	return l.Sql, nil
 }
 
 // SelectSql return the sql to select
-func (d *Postgres) SelectSql(linq *linq.Linq) (string, error) {
+func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
 
-	return "", nil
+	return l.Sql, nil
 }
 
 // InsertSql return the sql to insert
-func (d *Postgres) InsertSql(linq *linq.Linq) (string, error) {
+func (d *Postgres) InsertSql(l *linq.Linq) (string, error) {
 
-	return "", nil
+	return l.Sql, nil
 }
 
 // UpdateSql return the sql to update
-func (d *Postgres) UpdateSql(linq *linq.Linq) (string, error) {
+func (d *Postgres) UpdateSql(l *linq.Linq) (string, error) {
 
-	return "", nil
+	return l.Sql, nil
 }
 
 // DeleteSql return the sql to delete
-func (d *Postgres) DeleteSql(linq *linq.Linq) (string, error) {
+func (d *Postgres) DeleteSql(l *linq.Linq) (string, error) {
 
-	return "", nil
+	return l.Sql, nil
 }

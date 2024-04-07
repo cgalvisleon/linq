@@ -109,29 +109,31 @@ func (d *Sqlite) QueryOne(sql string, args ...any) (et.Item, error) {
 }
 
 // CountSql return the sql to count
-func (d *Sqlite) CountSql(linq *linq.Linq) (string, error) {
+func (d *Sqlite) CountSql(l *linq.Linq) (string, error) {
 
-	return "", nil
+	return l.Sql, nil
 }
 
 // SelectSql return the sql to select
-func (d *Sqlite) SelectSql(linq *linq.Linq) (string, error) {
-	return "", nil
+func (d *Sqlite) SelectSql(l *linq.Linq) (string, error) {
+
+	return l.Sql, nil
 }
 
 // InsertSql return the sql to insert
-func (d *Sqlite) InsertSql(linq *linq.Linq) (string, error) {
-	return "", nil
+func (d *Sqlite) InsertSql(l *linq.Linq) (string, error) {
+
+	return l.Sql, nil
 }
 
 // UpdateSql return the sql to update
-func (d *Sqlite) UpdateSql(linq *linq.Linq) (string, error) {
+func (d *Sqlite) UpdateSql(l *linq.Linq) (string, error) {
 
-	return "", nil
+	return l.Sql, nil
 }
 
 // DeleteSql return the sql to delete
-func (d *Sqlite) DeleteSql(linq *linq.Linq) (string, error) {
+func (d *Sqlite) DeleteSql(l *linq.Linq) (string, error) {
 
-	return "", nil
+	return l.Sql, nil
 }

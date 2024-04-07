@@ -5,33 +5,6 @@ import (
 	"github.com/cgalvisleon/et/logs"
 )
 
-// From struct to use in linq
-type Lfrom struct {
-	Linq  *Linq
-	Model *Model
-	AS    string
-}
-
-// Definition method to use in linq
-func (l *Lfrom) Definition() et.Json {
-	model := et.Json{}
-	if l.Model != nil {
-		model = l.Model.Definition()
-	}
-
-	return et.Json{
-		"model": model,
-		"as":    l.AS,
-	}
-}
-
-// As method to use set as name to from in linq
-func (l *Lfrom) As(name string) *Lfrom {
-	l.AS = name
-
-	return l
-}
-
 // GroupBy struct to use in linq
 type Lgroup struct {
 	Linq   *Linq

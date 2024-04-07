@@ -47,6 +47,33 @@ func getAs(linq *Linq) string {
 	return as
 }
 
+// From struct to use in linq
+type Lfrom struct {
+	Linq  *Linq
+	Model *Model
+	AS    string
+}
+
+// Definition method to use in linq
+func (l *Lfrom) Definition() et.Json {
+	model := et.Json{}
+	if l.Model != nil {
+		model = l.Model.Definition()
+	}
+
+	return et.Json{
+		"model": model,
+		"as":    l.AS,
+	}
+}
+
+// As method to use set as name to from in linq
+func (l *Lfrom) As(name string) *Lfrom {
+	l.AS = name
+
+	return l
+}
+
 // From method new linq
 func From(model *Model) *Linq {
 	result := &Linq{
