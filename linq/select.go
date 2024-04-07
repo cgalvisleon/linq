@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"strings"
+
 	"github.com/cgalvisleon/et/et"
 )
 
@@ -69,21 +71,21 @@ func (l *Linq) addSelect(model *Model, name string) *Lselect {
 
 // Select columns to use in linq
 func (m *Model) Select(sel ...any) *Linq {
-	r := From(m)
-	r.TypeSelect = TpRow
+	l := From(m)
+	l.TypeSelect = TpRow
 
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
-			r.addSelect(v.Model, v.Name)
+			l.addSelect(v.Model, v.Name)
 		case *Column:
-			r.addSelect(v.Model, v.Name)
+			l.addSelect(v.Model, v.Name)
 		case string:
-			r.addSelect(m, v)
+			l.addSelect(m, v)
 		}
 	}
 
-	return r
+	return l
 }
 
 // Select SourceField a linq with data
@@ -96,25 +98,45 @@ func (m *Model) Data(sel ...any) *Linq {
 	return result
 }
 
+// Select  columns a query
+func (l *Linq) Select(sel ...any) (et.Items, error) {
+	l.TypeSelect = TpRow
+	for _, col := range sel {
+		switch v := col.(type) {
+		case Column:
+			l.addSelect(v.Model, v.Name)
+		case *Column:
+			l.addSelect(v.Model, v.Name)
+		case string:
+			sp := strings.Split(v, ".")
+			if len(sp) > 1 {
+				n := sp[0]
+				m := l.Db.Model(n)
+				if m != nil {
+					l.addSelect(m, sp[1])
+				}
+			} else {
+				m := l.Froms[0].Model
+				l.addSelect(m, v)
+			}
+		}
+	}
+
+	return l.Find()
+}
+
+func (l *Linq) Data(sel ...any) (et.Items, error) {
+	l.Select(sel...)
+	l.TypeSelect = TpData
+
+	return l.Find()
+}
+
 // Select query take n element data
 func (l *Linq) Take(n int) (et.Items, error) {
 	l.Limit = n
-	var err error
-	l.Sql, err = l.selectSql()
-	if err != nil {
-		return et.Items{}, err
-	}
 
-	result, err := l.query()
-	if err != nil {
-		return et.Items{}, err
-	}
-
-	for _, data := range result.Result {
-		l.GetDetails(&data)
-	}
-
-	return result, nil
+	return l.Find()
 }
 
 func (l *Linq) Skip(n int) (et.Items, error) {
@@ -127,7 +149,7 @@ func (l *Linq) Skip(n int) (et.Items, error) {
 		return et.Items{}, err
 	}
 
-	result, err := l.query()
+	result, err := l.Query()
 	if err != nil {
 		return et.Items{}, err
 	}
@@ -141,11 +163,27 @@ func (l *Linq) Skip(n int) (et.Items, error) {
 
 // Select query
 func (l *Linq) Find() (et.Items, error) {
-	return l.Take(0)
+	var err error
+	l.Sql, err = l.selectSql()
+	if err != nil {
+		return et.Items{}, err
+	}
+
+	result, err := l.Query()
+	if err != nil {
+		return et.Items{}, err
+	}
+
+	for _, data := range result.Result {
+		l.GetDetails(&data)
+	}
+
+	return result, nil
 }
 
 // Select query all data
 func (l *Linq) All() (et.Items, error) {
+	l.Limit = 0
 	return l.Find()
 }
 
@@ -202,7 +240,7 @@ func (l *Linq) Count() (int, error) {
 		return 0, err
 	}
 
-	item, err := l.queryOne()
+	item, err := l.QueryOne()
 	if err != nil {
 		return 0, err
 	}

@@ -111,6 +111,7 @@ type Linq struct {
 	Orders     []*Lorder
 	Joins      []*Ljoin
 	Union      []*Linq
+	Returns    []*Lselect
 	Limit      int
 	Rows       int
 	Offset     int
@@ -161,6 +162,11 @@ func (l *Linq) Definition() *et.Json {
 		unions = append(unions, *u.Definition())
 	}
 
+	var returns []et.Json = []et.Json{}
+	for _, r := range l.Returns {
+		returns = append(returns, r.Definition())
+	}
+
 	return &et.Json{
 		"as":         l.as,
 		"froms":      froms,
@@ -170,6 +176,8 @@ func (l *Linq) Definition() *et.Json {
 		"groups":     groups,
 		"orders":     orders,
 		"joins":      joins,
+		"unions":     unions,
+		"returns":    returns,
 		"limit":      l.Limit,
 		"rows":       l.Rows,
 		"offset":     l.Offset,
@@ -222,11 +230,11 @@ func (l *Linq) deleteSql() (string, error) {
 }
 
 // Execute query and return items
-func (l *Linq) query() (et.Items, error) {
-	return l.Db.query(l)
+func (l *Linq) Query() (et.Items, error) {
+	return l.Db.Query(l)
 }
 
 // Execute query and return item
-func (l *Linq) queryOne() (et.Item, error) {
-	return l.Db.queryOne(l)
+func (l *Linq) QueryOne() (et.Item, error) {
+	return l.Db.QueryOne(l)
 }

@@ -45,9 +45,7 @@ func newJoin(l *Linq, t1, t2 *Model, where *Lwhere) *Ljoin {
 	_t1 := l.addFrom(t1)
 	_t2 := l.addFrom(t2)
 
-	where.Linq = l
-	where.Column.Linq = l
-	where.Column.From = _t1
+	where = where.setLinq(l)
 
 	switch v := where.Value.(type) {
 	case *Column:

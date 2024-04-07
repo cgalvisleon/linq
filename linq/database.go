@@ -89,6 +89,16 @@ func (d *Database) InitModel(model *Model) error {
 	return nil
 }
 
+func (d *Database) Model(name string) *Model {
+	for _, v := range d.Models {
+		if strs.Uppcase(v.Name) == strs.Uppcase(name) {
+			return v
+		}
+	}
+
+	return nil
+}
+
 // Connected to database
 func (d *Database) Connected(params et.Json) error {
 	if d.Driver == nil {
@@ -117,7 +127,7 @@ func (d *Database) ddlModel(model *Model) (string, error) {
 }
 
 // Query return a list of items
-func (d *Database) query(linq *Linq) (et.Items, error) {
+func (d *Database) Query(linq *Linq) (et.Items, error) {
 	if d.Driver == nil {
 		return et.Items{}, logs.Errorm("Driver is required")
 	}
@@ -130,7 +140,7 @@ func (d *Database) query(linq *Linq) (et.Items, error) {
 }
 
 // QueryOne return a item
-func (d *Database) queryOne(linq *Linq) (et.Item, error) {
+func (d *Database) QueryOne(linq *Linq) (et.Item, error) {
 	if d.Driver == nil {
 		return et.Item{}, logs.Errorm("Driver is required")
 	}
