@@ -13,16 +13,21 @@ import (
 
 // Postgres struct to define a postgres database
 type Postgres struct {
-	Host     string
-	Port     int
-	Database string
-	user     string
-	Db       *sql.DB
+	Host      string
+	Port      int
+	Database  string
+	user      string
+	Db        *sql.DB
+	Connected bool
 }
 
 // NewPostgres create a new postgres driver
-func NewPostgres() Postgres {
-	return Postgres{}
+func NewPostgres(host string, port int, database string) Postgres {
+	return Postgres{
+		Host:     host,
+		Port:     port,
+		Database: database,
+	}
 }
 
 // Type return the type of the driver
@@ -32,14 +37,6 @@ func (d *Postgres) Type() string {
 
 // Connect to the database
 func (d *Postgres) Connect(params et.Json) error {
-	if params["host"] == nil {
-		return logs.Errorm("Host is required")
-	}
-
-	if params["port"] == nil {
-		return logs.Errorm("Port is required")
-	}
-
 	if params["user"] == nil {
 		return logs.Errorm("User is required")
 	}
@@ -48,14 +45,7 @@ func (d *Postgres) Connect(params et.Json) error {
 		return logs.Errorm("Password is required")
 	}
 
-	if params["database"] == nil {
-		return logs.Errorm("Database is required")
-	}
-
 	driver := "postgres"
-	d.Host = params.Str("host")
-	d.Port = params.Int("port")
-	d.Database = params.Str("database")
 	d.user = params.Str("user")
 	password := params.Str("password")
 
@@ -66,6 +56,8 @@ func (d *Postgres) Connect(params et.Json) error {
 		return err
 	}
 
+	d.Connected = true
+
 	logs.Infof("Connected to %s database %s", driver, d.Database)
 
 	return nil
@@ -73,6 +65,10 @@ func (d *Postgres) Connect(params et.Json) error {
 
 // Disconnect to the database
 func (d *Postgres) Disconnect() error {
+	if !d.Connected {
+		return nil
+	}
+
 	return d.Db.Close()
 }
 
@@ -83,6 +79,10 @@ func (d *Postgres) DDLModel(model *linq.Model) (string, error) {
 
 // Exec execute a sql
 func (d *Postgres) Exec(sql string) error {
+	if !d.Connected {
+		return logs.Errorm("Db not connected")
+	}
+
 	_, err := d.Db.Exec(sql)
 	if err != nil {
 		logs.Error(err)
@@ -93,17 +93,32 @@ func (d *Postgres) Exec(sql string) error {
 
 // Query return a list of items
 func (d *Postgres) Query(linq *linq.Linq) (et.Items, error) {
+	if !d.Connected {
+		return et.Items{}, logs.Errorm("Db not connected")
+	}
+
 	return et.Items{}, nil
 }
 
 // QueryOne return a item
 func (d *Postgres) QueryOne(linq *linq.Linq) (et.Item, error) {
+	if !d.Connected {
+		return et.Item{}, logs.Errorm("Db not connected")
+	}
+
 	return et.Item{}, nil
 }
 
-// QueryList return a list of items
-func (d *Postgres) QueryList(linq *linq.Linq) (et.List, error) {
-	return et.List{}, nil
+// CountSql return the sql to count
+func (d *Postgres) CountSql(linq *linq.Linq) (string, error) {
+
+	return "", nil
+}
+
+// SelectSql return the sql to select
+func (d *Postgres) SelectSql(linq *linq.Linq) (string, error) {
+
+	return "", nil
 }
 
 // InsertSql return the sql to insert
@@ -120,12 +135,6 @@ func (d *Postgres) UpdateSql(linq *linq.Linq) (string, error) {
 
 // DeleteSql return the sql to delete
 func (d *Postgres) DeleteSql(linq *linq.Linq) (string, error) {
-
-	return "", nil
-}
-
-// UpsetSql return the sql to upset
-func (d *Postgres) UpsetSql(linq *linq.Linq) (string, error) {
 
 	return "", nil
 }

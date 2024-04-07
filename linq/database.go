@@ -122,6 +122,10 @@ func (d *Database) query(linq *Linq) (et.Items, error) {
 		return et.Items{}, logs.Errorm("Driver is required")
 	}
 
+	if len(linq.Sql) == 0 {
+		return et.Items{}, logs.Errorm("Sql is required")
+	}
+
 	return d.Driver.Query(linq)
 }
 
@@ -131,16 +135,29 @@ func (d *Database) queryOne(linq *Linq) (et.Item, error) {
 		return et.Item{}, logs.Errorm("Driver is required")
 	}
 
+	if len(linq.Sql) == 0 {
+		return et.Item{}, logs.Errorm("Sql is required")
+	}
+
 	return d.Driver.QueryOne(linq)
 }
 
-// QueryList return a list of items
-func (d *Database) queryList(linq *Linq) (et.List, error) {
+// CountSql return the sql to count
+func (d *Database) countSql(linq *Linq) (string, error) {
 	if d.Driver == nil {
-		return et.List{}, logs.Errorm("Driver is required")
+		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.QueryList(linq)
+	return d.Driver.CountSql(linq)
+}
+
+// SelectSql return the sql to select
+func (d *Database) selectSql(linq *Linq) (string, error) {
+	if d.Driver == nil {
+		return "", logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.SelectSql(linq)
 }
 
 // InsertSql return the sql to insert
@@ -168,13 +185,4 @@ func (d *Database) deleteSql(linq *Linq) (string, error) {
 	}
 
 	return d.Driver.DeleteSql(linq)
-}
-
-// UpsetSql return the sql to upset
-func (d *Database) upsetSql(linq *Linq) (string, error) {
-	if d.Driver == nil {
-		return "", logs.Errorm("Driver is required")
-	}
-
-	return d.Driver.UpsetSql(linq)
 }

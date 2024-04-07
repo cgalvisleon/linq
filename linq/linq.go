@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
 )
 
 // From struct to use in linq
@@ -18,6 +19,10 @@ type Lselect struct {
 	Linq   *Linq
 	Column *Column
 	As     string
+}
+
+func (l *Lselect) Details(data *et.Json) {
+	l.Column.Details(l.Column, data)
 }
 
 // Where struct to use in linq
@@ -85,10 +90,14 @@ type Linq struct {
 	Db       *Database
 	Froms    []*Lfrom
 	Selects  []*Lselect
+	Details  []*Lselect
 	Wheres   []*Lwhere
 	GroupsBy []*Lgroupby
 	Ordersby []*Lorderby
 	Joins    []*Ljoin
+	Limit    int
+	Rows     int
+	Offset   int
 	Tp       Lquery
 	Sql      string
 	Command  *Lcommand
@@ -189,7 +198,53 @@ func (l *Linq) From(model *Model) *Linq {
 	return l
 }
 
-func (l *Linq) Debug() string {
+// AddSelect method to use in linq
+func (l *Linq) Debug() *Linq {
+	logs.Log("debug", l.Sql)
 
-	return l.Sql
+	return l
+}
+
+// Details method to use in linq
+func (l *Linq) GetDetails(data *et.Json) *et.Json {
+	for _, col := range l.Details {
+		col.Details(data)
+	}
+
+	return data
+}
+
+// Return sql count by linq
+func (l *Linq) countSql() (string, error) {
+	return l.Db.countSql(l)
+}
+
+// Return sql select by linq
+func (l *Linq) selectSql() (string, error) {
+	return l.Db.selectSql(l)
+}
+
+// Return sql insert by linq
+func (l *Linq) insertSql() (string, error) {
+	return l.Db.insertSql(l)
+}
+
+// Return sql update by linq
+func (l *Linq) updateSql() (string, error) {
+	return l.Db.updateSql(l)
+}
+
+// Return sql delete by linq
+func (l *Linq) deleteSql() (string, error) {
+	return l.Db.deleteSql(l)
+}
+
+// Execute query and return items
+func (l *Linq) query() (et.Items, error) {
+	return l.Db.query(l)
+}
+
+// Execute query and return item
+func (l *Linq) queryOne() (et.Item, error) {
+	return l.Db.queryOne(l)
 }

@@ -1,15 +1,20 @@
 package main
 
 import (
+	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/lib"
 	"github.com/cgalvisleon/linq"
 )
 
 func main() {
-	drive := lib.NewPostgres()
+	drive := lib.NewPostgres("localhost", 5432, "test")
 	db := linq.NewDatabase("database", "description", &drive)
-	schema := linq.NewSchema("schema", "description")
+	db.Connected(et.Json{
+		"user":     "test",
+		"password": "test",
+	})
+	schema := linq.NewSchema("test", "description")
 	A := linq.NewModel(schema, "User", "", 1)
 	A.DefineColum("_id", "", linq.TpKey, "")
 	A.DefineColum("username", "", linq.TpString, "")
@@ -29,7 +34,6 @@ func main() {
 		logs.Errorm("Error")
 	}
 
-	r := linq.From(A)
-	s := r.Debug()
-	logs.Debug(s)
+	linq.From(A).
+		Debug()
 }

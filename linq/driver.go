@@ -38,9 +38,9 @@ type Driver interface {
 	Exec(sql string) error
 	Query(linq *Linq) (et.Items, error)
 	QueryOne(linq *Linq) (et.Item, error)
-	QueryList(linq *Linq) (et.List, error)
+	CountSql(linq *Linq) (string, error)
+	SelectSql(linq *Linq) (string, error)
 	InsertSql(linq *Linq) (string, error)
 	UpdateSql(linq *Linq) (string, error)
 	DeleteSql(linq *Linq) (string, error)
-	UpsetSql(linq *Linq) (string, error)
 }

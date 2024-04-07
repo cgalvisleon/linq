@@ -142,6 +142,12 @@ func (m *Model) C(name string) *Column {
 	return m.Column(name)
 }
 
+// Method short to find a column in the model
+func (m *Model) Col(name string) *Column {
+	return m.Column(name)
+}
+
+// Add index column to the model
 func (m *Model) AddIndexColumn(col *Column, asc bool) {
 	for _, v := range m.Index {
 		if v.Column.Up() == col.Up() {
@@ -153,7 +159,7 @@ func (m *Model) AddIndexColumn(col *Column, asc bool) {
 	m.Index = append(m.Index, &Index{Column: col, Asc: asc})
 }
 
-// Add index column to the model
+// Add index column by name to the model
 func (m *Model) AddIndex(name string) *Column {
 	col := COlumn(m, name)
 	if col == nil {
@@ -215,6 +221,7 @@ func (m *Model) AddForeignKey(name, description string, foreignKey []string, par
 	m.ForeignKey = append(m.ForeignKey, &Constraint{Name: name, Description: description, ForeignKey: foreignKey, ParentModel: parentModel, ParentKey: parentKey})
 }
 
+// Define a detail collumn to the model
 func (m *Model) Details(name, description string, _default any, details Details) *Column {
 	result := newColumn(m, name, description, TpDetail, TpAny, _default)
 	result.Hidden = true

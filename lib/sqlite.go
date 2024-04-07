@@ -12,13 +12,16 @@ import (
 
 // Sqlite struct to define a sqlite database
 type Sqlite struct {
-	Database string
-	Db       *sql.DB
+	Database  string
+	Db        *sql.DB
+	Connected bool
 }
 
 // NewSqlite create a new sqlite driver
-func NewSqlite() Sqlite {
-	return Sqlite{}
+func NewSqlite(database string) Sqlite {
+	return Sqlite{
+		Database: database,
+	}
 }
 
 // Type return the type of the driver
@@ -28,12 +31,7 @@ func (d *Sqlite) Type() string {
 
 // Connect to the database
 func (d *Sqlite) Connect(params et.Json) error {
-	if params["database"] == nil {
-		return logs.Errorm("Database is required")
-	}
-
 	driver := "sqlite3"
-	d.Database = params.Str("database")
 
 	var err error
 	d.Db, err = sql.Open(driver, d.Database)
@@ -46,6 +44,8 @@ func (d *Sqlite) Connect(params et.Json) error {
 		return err
 	}
 
+	d.Connected = true
+
 	logs.Infof("Connected to %s database %s", driver, d.Database)
 
 	return nil
@@ -53,6 +53,10 @@ func (d *Sqlite) Connect(params et.Json) error {
 
 // Disconnect to the database
 func (d *Sqlite) Disconnect() error {
+	if !d.Connected {
+		return nil
+	}
+
 	return d.Db.Close()
 }
 
@@ -63,6 +67,10 @@ func (d *Sqlite) DDLModel(model *linq.Model) (string, error) {
 
 // Exec the sql
 func (d *Sqlite) Exec(sql string) error {
+	if !d.Connected {
+		return logs.Errorm("Not connected to database")
+	}
+
 	_, err := d.Db.Exec(sql)
 	if err != nil {
 		return logs.Error(err)
@@ -73,18 +81,31 @@ func (d *Sqlite) Exec(sql string) error {
 
 // Query return a list of items
 func (d *Sqlite) Query(linq *linq.Linq) (et.Items, error) {
+	if !d.Connected {
+		return et.Items{}, logs.Errorm("Not connected to database")
+	}
+
 	return et.Items{}, nil
 }
 
 // QueryOne return a item
 func (d *Sqlite) QueryOne(linq *linq.Linq) (et.Item, error) {
+	if !d.Connected {
+		return et.Item{}, logs.Errorm("Not connected to database")
+	}
+
 	return et.Item{}, nil
 }
 
-// QueryList return a list of items
-func (d *Sqlite) QueryList(linq *linq.Linq) (et.List, error) {
+// CountSql return the sql to count
+func (d *Sqlite) CountSql(linq *linq.Linq) (string, error) {
 
-	return et.List{}, nil
+	return "", nil
+}
+
+// SelectSql return the sql to select
+func (d *Sqlite) SelectSql(linq *linq.Linq) (string, error) {
+	return "", nil
 }
 
 // InsertSql return the sql to insert
@@ -100,12 +121,6 @@ func (d *Sqlite) UpdateSql(linq *linq.Linq) (string, error) {
 
 // DeleteSql return the sql to delete
 func (d *Sqlite) DeleteSql(linq *linq.Linq) (string, error) {
-
-	return "", nil
-}
-
-// UpsetSql return the sql to upset
-func (d *Sqlite) UpsetSql(linq *linq.Linq) (string, error) {
 
 	return "", nil
 }
