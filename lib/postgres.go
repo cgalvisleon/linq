@@ -92,21 +92,32 @@ func (d *Postgres) Exec(sql string, args ...any) error {
 }
 
 // Query return a list of items
-func (d *Postgres) Query(lsql string, args ...any) (et.Items, error) {
+func (d *Postgres) Query(sql string, args ...any) (et.Items, error) {
 	if !d.Connected {
 		return et.Items{}, logs.Errorm("Db not connected")
 	}
 
-	return et.Items{}, nil
+	return Query(d.Db, sql, args...)
 }
 
 // QueryOne return a item
 func (d *Postgres) QueryOne(sql string, args ...any) (et.Item, error) {
-	if !d.Connected {
-		return et.Item{}, logs.Errorm("Db not connected")
+	items, err := d.Query(sql, args...)
+	if err != nil {
+		return et.Item{}, err
 	}
 
-	return et.Item{}, nil
+	if items.Count == 0 {
+		return et.Item{
+			Ok:     false,
+			Result: et.Json{},
+		}, nil
+	}
+
+	return et.Item{
+		Ok:     items.Ok,
+		Result: items.Result[0],
+	}, nil
 }
 
 // CountSql return the sql to count
