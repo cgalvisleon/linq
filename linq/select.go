@@ -13,6 +13,8 @@ const (
 	TpCount
 	TpSum
 	TpAvg
+	TpMax
+	TpMin
 )
 
 func (d TypeFunction) String() string {
@@ -23,7 +25,12 @@ func (d TypeFunction) String() string {
 		return "sum"
 	case TpAvg:
 		return "avg"
+	case TpMax:
+		return "max"
+	case TpMin:
+		return "min"
 	}
+
 	return ""
 }
 
@@ -177,6 +184,22 @@ func (l *Linq) Sum(col *Column) *Linq {
 func (l *Linq) Avg(col *Column) *Linq {
 	sel := l.addColumn(col)
 	sel.TypeFunction = TpAvg
+
+	return l
+}
+
+// Max function to use in linq
+func (l *Linq) Max(col *Column) *Linq {
+	sel := l.addColumn(col)
+	sel.TypeFunction = TpMax
+
+	return l
+}
+
+// Min function to use in linq
+func (l *Linq) Min(col *Column) *Linq {
+	sel := l.addColumn(col)
+	sel.TypeFunction = TpMin
 
 	return l
 }
