@@ -303,31 +303,20 @@ func (l *Linq) Page(page, rows int) (et.Items, error) {
 	return l.Find()
 }
 
-// Select query type count data
-func (l *Linq) Total() (int, error) {
-	l.TypeQuery = TpTotal
+// Select query list, include count, page and rows
+func (l *Linq) List(page, rows int) (et.List, error) {
 	var err error
 	l.Sql, err = l.countSql()
 	if err != nil {
-		return 0, err
+		return et.List{}, err
 	}
 
 	item, err := l.QueryOne()
 	if err != nil {
-		return 0, err
-	}
-
-	result := item.Int("count")
-
-	return result, nil
-}
-
-// Select query list, include count, page and rows
-func (l *Linq) List(page, rows int) (et.List, error) {
-	all, err := l.Total()
-	if err != nil {
 		return et.List{}, err
 	}
+
+	all := item.Int("count")
 
 	items, err := l.Page(page, rows)
 	if err != nil {

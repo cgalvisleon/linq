@@ -53,7 +53,6 @@ type TypeQuery int
 // Values for TypeQuery
 const (
 	TpSelect TypeQuery = iota
-	TpTotal
 	TpCommand
 	TpLast
 	TpSkip
