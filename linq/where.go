@@ -11,12 +11,11 @@ type Lwhere struct {
 	Connetor string
 }
 
-func Where(column *Column, operator string, value interface{}, connetor string) *Lwhere {
+func where(column *Column, operator string, value interface{}) *Lwhere {
 	return &Lwhere{
 		Column:   &Lselect{Column: column, AS: column.Name},
 		Operator: operator,
 		Value:    value,
-		Connetor: connetor,
 	}
 }
 
@@ -30,6 +29,7 @@ func (w *Lwhere) Definition() et.Json {
 	}
 }
 
+// setLinq to where
 func (w *Lwhere) setLinq(l *Linq) *Lwhere {
 	_select := w.Column
 	_from := l.addFrom(_select.Column.Model)
@@ -42,8 +42,7 @@ func (w *Lwhere) setLinq(l *Linq) *Lwhere {
 }
 
 // Where method to use in linq
-func (l *Linq) Where(column *Column, operator string, value interface{}, connetor string) *Linq {
-	where := Where(column, operator, value, connetor)
+func (l *Linq) Where(where *Lwhere) *Linq {
 	where.setLinq(l)
 	l.Wheres = append(l.Wheres, where)
 
@@ -51,13 +50,69 @@ func (l *Linq) Where(column *Column, operator string, value interface{}, conneto
 }
 
 // And method to use in where linq
-func (l *Linq) And(column *Column, operator string, value interface{}) *Linq {
-	return l.Where(column, operator, value, "AND")
+func (l *Linq) And(where *Lwhere) *Linq {
+	where.setLinq(l)
+	where.Connetor = "AND"
+	l.Wheres = append(l.Wheres, where)
+
+	return l
 }
 
 // Or method to use in where linq
-func (l *Linq) Or(column *Column, operator string, value interface{}) *Linq {
-	return l.Where(column, operator, value, "OR")
+func (l *Linq) Or(where *Lwhere) *Linq {
+	where.setLinq(l)
+	where.Connetor = "AND"
+	l.Wheres = append(l.Wheres, where)
+
+	return l
 }
 
-// Where method to use in linq
+// Equal method to use in column
+func (c *Column) Eq(val interface{}) *Lwhere {
+	return where(c, "=", val)
+}
+
+// NotEqual method to use in column
+func (c *Column) Neq(val interface{}) *Lwhere {
+	return where(c, "!=", val)
+}
+
+// Values in method to use in column
+func (c *Column) In(vals ...interface{}) *Lwhere {
+	return where(c, "IN", vals)
+}
+
+// Like method to use in column
+func (c *Column) Like(val interface{}) *Lwhere {
+	return where(c, "LIKE", val)
+}
+
+// More method to use in column
+func (c *Column) More(val interface{}) *Lwhere {
+	return where(c, ">", val)
+}
+
+// Less method to use in column
+func (c *Column) Less(val interface{}) *Lwhere {
+	return where(c, ">", val)
+}
+
+// MoreEq method to use in column
+func (c *Column) MoreEq(val interface{}) *Lwhere {
+	return where(c, ">=", val)
+}
+
+// LessEq method to use in column
+func (c *Column) LessEq(val interface{}) *Lwhere {
+	return where(c, "<=", val)
+}
+
+// Between method to use in column
+func (c *Column) Between(vals ...interface{}) *Lwhere {
+	return where(c, "BETWEEN", vals)
+}
+
+// NotBetween method to use in column
+func (c *Column) NotBetween(vals ...interface{}) *Lwhere {
+	return where(c, "NOT BETWEEN", vals)
+}

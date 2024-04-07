@@ -6,20 +6,43 @@ import (
 	"github.com/cgalvisleon/et/et"
 )
 
+type TypeFunction int
+
+const (
+	TpNone TypeFunction = iota
+	TpCount
+	TpSum
+	TpAvg
+)
+
+func (d TypeFunction) String() string {
+	switch d {
+	case TpCount:
+		return "count"
+	case TpSum:
+		return "sum"
+	case TpAvg:
+		return "avg"
+	}
+	return ""
+}
+
 // Select struct to use in linq
 type Lselect struct {
-	Linq   *Linq
-	From   *Lfrom
-	Column *Column
-	AS     string
+	Linq         *Linq
+	From         *Lfrom
+	Column       *Column
+	AS           string
+	TypeFunction TypeFunction
 }
 
 // Definition method to use in linq
 func (l *Lselect) Definition() et.Json {
 	return et.Json{
-		"form":   l.From.Definition(),
-		"column": l.Column.Name,
-		"as":     l.AS,
+		"form":         l.From.Definition(),
+		"column":       l.Column.Name,
+		"as":           l.AS,
+		"typeFunction": l.TypeFunction.String(),
 	}
 }
 
@@ -44,7 +67,7 @@ func (l *Linq) addColumn(column *Column) *Lselect {
 	}
 
 	lform := l.addFrom(column.Model)
-	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name}
+	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
 	l.Columns = append(l.Columns, result)
 
 	return result
@@ -130,6 +153,32 @@ func (l *Linq) Data(sel ...any) (et.Items, error) {
 	l.TypeSelect = TpData
 
 	return l.Find()
+}
+
+// Numeric function to use in linq
+
+// Count function to use in linq
+func (l *Linq) Count(col *Column) *Linq {
+	sel := l.addColumn(col)
+	sel.TypeFunction = TpCount
+
+	return l
+}
+
+// Sum function to use in linq
+func (l *Linq) Sum(col *Column) *Linq {
+	sel := l.addColumn(col)
+	sel.TypeFunction = TpSum
+
+	return l
+}
+
+// Avg function to use in linq
+func (l *Linq) Avg(col *Column) *Linq {
+	sel := l.addColumn(col)
+	sel.TypeFunction = TpAvg
+
+	return l
 }
 
 // Select query take n element data
@@ -232,8 +281,8 @@ func (l *Linq) Page(page, rows int) (et.Items, error) {
 }
 
 // Select query type count data
-func (l *Linq) Count() (int, error) {
-	l.TypeQuery = TpCount
+func (l *Linq) Total() (int, error) {
+	l.TypeQuery = TpTotal
 	var err error
 	l.Sql, err = l.countSql()
 	if err != nil {
@@ -252,7 +301,7 @@ func (l *Linq) Count() (int, error) {
 
 // Select query list, include count, page and rows
 func (l *Linq) List(page, rows int) (et.List, error) {
-	all, err := l.Count()
+	all, err := l.Total()
 	if err != nil {
 		return et.List{}, err
 	}

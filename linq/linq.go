@@ -53,8 +53,8 @@ type TypeQuery int
 // Values for TypeQuery
 const (
 	TpSelect TypeQuery = iota
+	TpTotal
 	TpCommand
-	TpCount
 	TpLast
 	TpSkip
 	TpPage
@@ -67,8 +67,6 @@ func (d TypeQuery) String() string {
 		return "select"
 	case TpCommand:
 		return "command"
-	case TpCount:
-		return "count"
 	case TpLast:
 		return "last"
 	case TpSkip:
