@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
-	"github.com/cgalvisleon/lib"
-	"github.com/cgalvisleon/linq"
+	"github.com/cgalvisleon/linq/lib"
+	"github.com/cgalvisleon/linq/linq"
 )
 
 func main() {

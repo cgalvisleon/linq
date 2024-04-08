@@ -47,21 +47,20 @@ type Listener func(data et.Json)
 type Model struct {
 	Name            string
 	Description     string
-	Colums          []*Column
+	Columns         []*Column
 	Schema          *Schema
 	Db              *Database
 	Table           string
 	PrimaryKeys     []*Column
 	ForeignKey      []*Constraint
 	Index           []*Index
-	sourceField     string
-	dateMakeField   string
-	dateUpdateField string
-	indexField      string
-	codeField       string
-	stateField      string
-	projectField    string
-	idTField        string
+	SourceField     string
+	DateMakeField   string
+	DateUpdateField string
+	IndexField      string
+	StateField      string
+	ProjectField    string
+	IdTField        string
 	UseSource       bool
 	UseDateMake     bool
 	UseDateUpdate   bool
@@ -88,22 +87,21 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		Name:            strs.Uppcase(name),
 		Table:           schema.Name + "." + strs.Uppcase(name),
 		Description:     description,
-		Colums:          []*Column{},
+		Columns:         []*Column{},
 		PrimaryKeys:     []*Column{},
 		ForeignKey:      []*Constraint{},
 		Index:           []*Index{},
 		Version:         version,
-		sourceField:     schema.sourceField,
-		dateMakeField:   schema.dateMakeField,
-		dateUpdateField: schema.dateUpdateField,
-		indexField:      schema.indexField,
-		codeField:       schema.codeField,
-		stateField:      schema.stateField,
-		projectField:    schema.projectField,
-		idTField:        schema.idTField,
+		SourceField:     schema.SourceField,
+		DateMakeField:   schema.DateMakeField,
+		DateUpdateField: schema.DateUpdateField,
+		IndexField:      schema.IndexField,
+		StateField:      schema.StateField,
+		ProjectField:    schema.ProjectField,
+		IdTField:        schema.IdTField,
 	}
 
-	_idT := result.DefineColum(result.idTField, "_idT of the table", TpKey, "-1")
+	_idT := result.DefineColum(result.IdTField, "_idT of the table", TpKey, "-1")
 	result.AddIndexColumn(_idT, true)
 
 	schema.AddModel(result)
@@ -114,7 +112,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 // Definition return a json with the definition of the model
 func (m *Model) Definition() et.Json {
 	var columns []et.Json = []et.Json{}
-	for _, v := range m.Colums {
+	for _, v := range m.Columns {
 		columns = append(columns, v.describe())
 	}
 
@@ -142,7 +140,7 @@ func (m *Model) Definition() et.Json {
 func (m *Model) Column(name string) *Column {
 	idx := IndexColumn(m, name)
 	if idx != -1 {
-		return m.Colums[idx]
+		return m.Columns[idx]
 	}
 
 	return nil

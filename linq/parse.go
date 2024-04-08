@@ -1,4 +1,4 @@
-package lib
+package linq
 
 import (
 	"database/sql"
@@ -64,6 +64,21 @@ func RowsItems(rows *sql.Rows) et.Items {
 	return result
 }
 
+// rowsItems return a items from a sql query
+func DataItems(rows *sql.Rows, sourceField string) et.Items {
+	var result et.Items = et.Items{Result: []et.Json{}}
+
+	for rows.Next() {
+		var item et.Item
+		item.Scan(rows)
+		result.Result = append(result.Result, item.Json(sourceField))
+		result.Ok = true
+		result.Count++
+	}
+
+	return result
+}
+
 // Query return a list of items
 func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	sql = SQLParse(sql, args...)
@@ -74,6 +89,19 @@ func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	defer rows.Close()
 
 	result := RowsItems(rows)
+
+	return result, nil
+}
+
+func Data(db *sql.DB, sourceFiled, sql string, args ...any) (et.Items, error) {
+	sql = SQLParse(sql, args...)
+	rows, err := db.Query(sql)
+	if err != nil {
+		return et.Items{}, logs.Error(err)
+	}
+	defer rows.Close()
+
+	result := DataItems(rows, sourceFiled)
 
 	return result, nil
 }

@@ -116,7 +116,7 @@ type Reference struct {
 // IndexColumn return index of column in model
 func IndexColumn(model *Model, name string) int {
 	result := -1
-	for i, col := range model.Colums {
+	for i, col := range model.Columns {
 		if strs.Uppcase(col.Name) == strs.Uppcase(name) {
 			return i
 		}
@@ -129,7 +129,7 @@ func IndexColumn(model *Model, name string) int {
 func COlumn(model *Model, name string) *Column {
 	idx := IndexColumn(model, name)
 	if idx != -1 {
-		return model.Colums[idx]
+		return model.Columns[idx]
 	}
 
 	return nil
@@ -140,7 +140,7 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	idx := IndexColumn(model, name)
 
 	if idx != -1 {
-		return model.Colums[idx]
+		return model.Columns[idx]
 	}
 
 	result := &Column{
@@ -157,30 +157,30 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	}
 
 	if !model.UseSource {
-		model.UseSource = result.Name == model.sourceField
+		model.UseSource = result.Name == model.SourceField
 	}
 
 	if !model.UseDateMake {
-		model.UseDateMake = result.Name == model.dateMakeField
+		model.UseDateMake = result.Name == model.DateMakeField
 	}
 
 	if !model.UseDateUpdate {
-		model.UseDateUpdate = result.Name == model.dateUpdateField
+		model.UseDateUpdate = result.Name == model.DateUpdateField
 	}
 
 	if !model.UseIndex {
-		model.UseIndex = result.Name == model.indexField
+		model.UseIndex = result.Name == model.IndexField
 	}
 
 	if !model.UseState {
-		model.UseState = result.Name == model.stateField
+		model.UseState = result.Name == model.StateField
 	}
 
 	if !model.UseProject {
-		model.UseState = result.Name == model.projectField
+		model.UseState = result.Name == model.ProjectField
 	}
 
-	model.Colums = append(model.Colums, result)
+	model.Columns = append(model.Columns, result)
 
 	return result
 }

@@ -1,6 +1,8 @@
 package linq
 
-import "github.com/cgalvisleon/et/et"
+import (
+	"github.com/cgalvisleon/et/et"
+)
 
 // Select query
 func (l *Linq) Query() (et.Items, error) {

@@ -11,14 +11,13 @@ type Schema struct {
 	Description     string
 	Db              *Database
 	Models          []*Model
-	sourceField     string
-	dateMakeField   string
-	dateUpdateField string
-	indexField      string
-	codeField       string
-	stateField      string
-	projectField    string
-	idTField        string
+	SourceField     string
+	DateMakeField   string
+	DateUpdateField string
+	IndexField      string
+	StateField      string
+	ProjectField    string
+	IdTField        string
 }
 
 // NewSchema create a new schema
@@ -27,13 +26,13 @@ func NewSchema(name, description string) *Schema {
 		Name:            strs.Lowcase(name),
 		Description:     description,
 		Models:          []*Model{},
-		sourceField:     "_DATA",
-		dateMakeField:   "DATE_MAKE",
-		dateUpdateField: "DATE_UPDATE",
-		indexField:      "INDEX",
-		stateField:      "_STATE",
-		projectField:    "PROJECT_ID",
-		idTField:        "_IDT",
+		SourceField:     "_DATA",
+		DateMakeField:   "DATE_MAKE",
+		DateUpdateField: "DATE_UPDATE",
+		IndexField:      "INDEX",
+		StateField:      "_STATE",
+		ProjectField:    "PROJECT_ID",
+		IdTField:        "_IDT",
 	}
 
 	return result

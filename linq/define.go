@@ -12,9 +12,9 @@ func (m *Model) DefineColum(name, description string, typeData TypeData, _defaul
 
 // DefineAtrib define a atrib in the model
 func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default any) *Column {
-	source := COlumn(m, m.sourceField)
+	source := COlumn(m, m.SourceField)
 	if source == nil {
-		source = m.DefineColum(m.sourceField, "Source field", TpJson, "{}")
+		source = m.DefineColum(m.SourceField, "Source field", TpJson, "{}")
 	}
 
 	result := newColumn(m, strs.Lowcase(name), description, TpAtrib, typeData, _default)
