@@ -43,6 +43,25 @@ type Lselect struct {
 	TypeFunction TypeFunction
 }
 
+// TypeSelect struct to use in linq
+type TypeSelect int
+
+// Values for TypeSelect
+const (
+	TpData TypeSelect = iota
+	TpRow
+)
+
+func (d TypeSelect) String() string {
+	switch d {
+	case TpData:
+		return "data"
+	case TpRow:
+		return "row"
+	}
+	return ""
+}
+
 // Definition method to use in linq
 func (l *Lselect) Definition() et.Json {
 	return et.Json{
@@ -66,14 +85,14 @@ func (l *Lselect) Details(data *et.Json) {
 }
 
 // Add column to select by name
-func (l *Linq) addColumn(column *Column) *Lselect {
+func (l *Linq) GetColumn(column *Column) *Lselect {
 	for _, v := range l.Columns {
 		if v.Column == column {
 			return v
 		}
 	}
 
-	lform := l.addFrom(column.Model)
+	lform := l.GetFrom(column.Model)
 	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
 	l.Columns = append(l.Columns, result)
 
@@ -93,7 +112,7 @@ func (l *Linq) addSelect(model *Model, name string) *Lselect {
 		}
 	}
 
-	result := l.addColumn(column)
+	result := l.GetColumn(column)
 	l.Selects = append(l.Selects, result)
 
 	return result
@@ -132,7 +151,7 @@ func (m *Model) Data(sel ...any) *Linq {
 
 // Count function to use in linq
 func (l *Linq) Count(col *Column) *Linq {
-	sel := l.addColumn(col)
+	sel := l.GetColumn(col)
 	sel.TypeFunction = TpCount
 
 	return l
@@ -140,7 +159,7 @@ func (l *Linq) Count(col *Column) *Linq {
 
 // Sum function to use in linq
 func (l *Linq) Sum(col *Column) *Linq {
-	sel := l.addColumn(col)
+	sel := l.GetColumn(col)
 	sel.TypeFunction = TpSum
 
 	return l
@@ -148,7 +167,7 @@ func (l *Linq) Sum(col *Column) *Linq {
 
 // Avg function to use in linq
 func (l *Linq) Avg(col *Column) *Linq {
-	sel := l.addColumn(col)
+	sel := l.GetColumn(col)
 	sel.TypeFunction = TpAvg
 
 	return l
@@ -156,7 +175,7 @@ func (l *Linq) Avg(col *Column) *Linq {
 
 // Max function to use in linq
 func (l *Linq) Max(col *Column) *Linq {
-	sel := l.addColumn(col)
+	sel := l.GetColumn(col)
 	sel.TypeFunction = TpMax
 
 	return l
@@ -164,7 +183,7 @@ func (l *Linq) Max(col *Column) *Linq {
 
 // Min function to use in linq
 func (l *Linq) Min(col *Column) *Linq {
-	sel := l.addColumn(col)
+	sel := l.GetColumn(col)
 	sel.TypeFunction = TpMin
 
 	return l

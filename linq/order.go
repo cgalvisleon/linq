@@ -20,7 +20,7 @@ func (l *Lorder) Definition() et.Json {
 // OrderBy method to use in linq
 func (l *Linq) OrderBy(columns ...*Column) *Linq {
 	for _, column := range columns {
-		s := l.addColumn(column)
+		s := l.GetColumn(column)
 
 		order := &Lorder{
 			Linq:   l,
@@ -37,7 +37,7 @@ func (l *Linq) OrderBy(columns ...*Column) *Linq {
 // OrderByDescending method to use in linq
 func (l *Linq) OrderByDescending(columns ...*Column) *Linq {
 	for _, column := range columns {
-		s := l.addColumn(column)
+		s := l.GetColumn(column)
 
 		order := &Lorder{
 			Linq:   l,

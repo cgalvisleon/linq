@@ -49,25 +49,6 @@ func (d TypeQuery) String() string {
 	return ""
 }
 
-// TypeSelect struct to use in linq
-type TypeSelect int
-
-// Values for TypeSelect
-const (
-	TpData TypeSelect = iota
-	TpRow
-)
-
-func (d TypeSelect) String() string {
-	switch d {
-	case TpData:
-		return "data"
-	case TpRow:
-		return "row"
-	}
-	return ""
-}
-
 // Linq struct
 type Linq struct {
 	Db         *Database
@@ -197,6 +178,11 @@ func (l *Linq) updateSql() (string, error) {
 // Return sql delete by linq
 func (l *Linq) deleteSql() (string, error) {
 	return l.Db.deleteSql(l)
+}
+
+// Execute query
+func (l *Linq) exec() error {
+	return l.Db.Exec(l.Sql)
 }
 
 // Execute query and return items

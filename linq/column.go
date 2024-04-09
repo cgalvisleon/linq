@@ -14,7 +14,7 @@ const (
 	TpDetail               // Detail is array objects asociated to master data
 	TpReference            // Reference is a json object your basic struc is {_id: "", name: ""}
 	TpCaption              // Caption is a text column and show value reference sy id
-	TpFunction             // Function is a sql get a one value as model
+	TpSql                  // Function is a sql get a one value as model
 )
 
 // String return string of type column
@@ -30,8 +30,8 @@ func (t TypeColumn) String() string {
 		return "reference"
 	case TpCaption:
 		return "caption"
-	case TpFunction:
-		return "function"
+	case TpSql:
+		return "sql"
 	}
 	return ""
 }
@@ -93,6 +93,7 @@ type Column struct {
 	Atribs      []*Column
 	Main        *Column
 	Reference   *Reference
+	Sql         string
 	References  []*Column
 	Dependents  []*Column
 	Details     Details
@@ -102,15 +103,11 @@ type Column struct {
 	RequiredMsg string
 	PrimaryKey  bool
 	ForeignKey  bool
-	Hidden      bool
+	IsSelect    bool
+	IsData      bool
+	hidden      bool
+	SourceField bool
 	Validation  Validation
-}
-
-type Reference struct {
-	ThisKey   *Column
-	Name      string
-	OtherKey  *Column
-	Reference *Column
 }
 
 // IndexColumn return index of column in model
@@ -153,11 +150,14 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		Default:     _default,
 		Atribs:      []*Column{},
 		Indexed:     false,
-		Hidden:      false,
+		hidden:      false,
+		IsSelect:    true,
+		IsData:      true,
 	}
 
 	if !model.UseSource {
 		model.UseSource = result.Name == model.SourceField
+		result.SourceField = model.UseSource
 	}
 
 	if !model.UseDateMake {
@@ -180,6 +180,16 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		model.UseState = result.Name == model.ProjectField
 	}
 
+	if result.SourceField {
+		result.IsSelect = true
+		result.IsData = false
+	}
+
+	if result.TypeColumn == TpDetail {
+		result.IsSelect = false
+		result.IsData = false
+	}
+
 	model.Columns = append(model.Columns, result)
 
 	return result
@@ -198,7 +208,7 @@ func (c *Column) describe() et.Json {
 		"required":    c.Required,
 		"primaryKey":  c.PrimaryKey,
 		"foreignKey":  c.ForeignKey,
-		"hidden":      c.Hidden,
+		"hidden":      c.IsHidden,
 	}
 }
 
@@ -220,9 +230,38 @@ func (c *Column) Describe() et.Json {
 		"required":    c.Required,
 		"primaryKey":  c.PrimaryKey,
 		"foreignKey":  c.ForeignKey,
-		"hidden":      c.Hidden,
+		"hidden":      c.IsHidden,
 		"atribs":      atribs,
 	}
+}
+
+// AsModel return as name of model
+func (c *Column) AsModel(l *Linq) string {
+	f := l.GetFrom(c.Model)
+	return f.AS
+}
+
+// AsModel return as name of model
+func (c *Column) As(l *Linq) string {
+	f := l.GetFrom(c.Model)
+	s := l.GetColumn(c)
+	if s.AS != c.Name {
+		return strs.Format(`%s.%s AS %s`, f.AS, c.Name, s.AS)
+	}
+
+	return strs.Format(`%s.%s`, f.AS, c.Name)
+}
+
+// IsHidden return if column is hidden
+func (c *Column) IsHidden() bool {
+	return c.hidden
+}
+
+// Hidden set hidden column
+func (c *Column) SetHidden(val bool) {
+	c.hidden = val
+	c.IsSelect = !val
+	c.IsData = !val
 }
 
 // Indexed add a index to column

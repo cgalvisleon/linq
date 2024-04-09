@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/strs"
 )
 
 // As method to use in linq from return leter string
@@ -74,6 +75,14 @@ func (l *Lfrom) As(name string) *Lfrom {
 	return l
 }
 
+func (l *Lfrom) AsColumn(col *Column) string {
+	if l.Model == col.Model {
+		return strs.Format(`%s.%s`, l.AS, col.Name)
+	}
+
+	return col.Name
+}
+
 // From method new linq
 func From(model *Model) *Linq {
 	result := &Linq{
@@ -90,11 +99,11 @@ func From(model *Model) *Linq {
 		Rows:    0,
 		Offset:  0,
 		Command: &Lcommand{
-			From:    &Lfrom{},
-			Command: Tpnone,
-			Data:    &et.Json{},
-			New:     &et.Json{},
-			Update:  &et.Json{},
+			From:        &Lfrom{},
+			TypeCommand: Tpnone,
+			Data:        &et.Json{},
+			New:         &et.Json{},
+			Update:      &et.Json{},
 		},
 		TypeSelect: TpRow,
 		TypeQuery:  TpSelect,
@@ -121,7 +130,21 @@ func (l *Linq) indexFrom(model *Model) int {
 }
 
 // AddFrom method to use in linq
-func (l *Linq) addFrom(model *Model) *Lfrom {
+func (l *Linq) NewFrom(model *Model) *Lfrom {
+	var result *Lfrom
+	idx := l.indexFrom(model)
+	if idx == -1 {
+		as := getAs(l)
+		result = &Lfrom{Linq: l, Model: model, AS: as}
+	} else {
+		result = l.Froms[idx]
+	}
+
+	return result
+}
+
+// AddFrom method to use in linq
+func (l *Linq) GetFrom(model *Model) *Lfrom {
 	var result *Lfrom
 	idx := l.indexFrom(model)
 	if idx == -1 {
@@ -137,7 +160,7 @@ func (l *Linq) addFrom(model *Model) *Lfrom {
 
 // From method to use in linq
 func (l *Linq) From(model *Model) *Linq {
-	l.addFrom(model)
+	l.GetFrom(model)
 
 	return l
 }

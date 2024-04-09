@@ -42,8 +42,8 @@ func (l *Ljoin) Definition() et.Json {
 }
 
 func newJoin(l *Linq, t1, t2 *Model, where *Lwhere) *Ljoin {
-	_t1 := l.addFrom(t1)
-	_t2 := l.addFrom(t2)
+	_t1 := l.GetFrom(t1)
+	_t2 := l.GetFrom(t2)
 
 	where = where.setLinq(l)
 

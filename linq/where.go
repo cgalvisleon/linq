@@ -32,7 +32,7 @@ func (w *Lwhere) Definition() et.Json {
 // setLinq to where
 func (w *Lwhere) setLinq(l *Linq) *Lwhere {
 	_select := w.Column
-	_from := l.addFrom(_select.Column.Model)
+	_from := l.GetFrom(_select.Column.Model)
 
 	w.Linq = l
 	_select.Linq = l

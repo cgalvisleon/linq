@@ -126,6 +126,19 @@ func (d *Database) ddlModel(model *Model) (string, error) {
 	return d.Driver.DDLModel(model)
 }
 
+// Exec execute a sql
+func (d *Database) Exec(sql string, args ...any) error {
+	if d.Driver == nil {
+		return logs.Errorm("Driver is required")
+	}
+
+	if len(sql) == 0 {
+		return logs.Errorm("Sql is required")
+	}
+
+	return d.Driver.Exec(sql, args...)
+}
+
 // Query return a list of items
 func (d *Database) Query(sql string, args ...any) (et.Items, error) {
 	if d.Driver == nil {

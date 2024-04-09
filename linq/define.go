@@ -50,7 +50,7 @@ func (m *Model) DefineHidden(hiddens []string) *Model {
 	for _, v := range hiddens {
 		col := COlumn(m, v)
 		if col != nil {
-			col.Hidden = true
+			col.SetHidden(true)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (m *Model) DefineForeignKey(name, description string, foreignKey []string, 
 	return m
 }
 
-// Define reference in the model
+// Define reference to object in the model
 func (m *Model) DefineReference(thisKey *Column, name string, otherKey, column *Column, showThisKey bool) *Column {
 	result := newColumn(m, strs.Uppcase(name), "", TpReference, TpJson, et.Json{"_id": "", "name": ""})
 	if result == nil {
@@ -81,7 +81,7 @@ func (m *Model) DefineReference(thisKey *Column, name string, otherKey, column *
 	}
 
 	result.Reference = &Reference{thisKey, name, otherKey, column}
-	thisKey.Hidden = !showThisKey
+	thisKey.SetHidden(!showThisKey)
 	thisKey.AddRefeence(otherKey)
 	m.AddIndexColumn(thisKey, true)
 	otherKey.AddDependent(thisKey)
@@ -89,6 +89,7 @@ func (m *Model) DefineReference(thisKey *Column, name string, otherKey, column *
 	return result
 }
 
+// Define caption in the model
 func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Column) *Column {
 	result := newColumn(m, strs.Uppcase(name), "", TpCaption, TpJson, "")
 	if result == nil {
@@ -99,6 +100,17 @@ func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Co
 	thisKey.AddRefeence(otherKey)
 	m.AddIndexColumn(thisKey, true)
 	otherKey.AddDependent(thisKey)
+
+	return result
+}
+
+func (m *Model) DefineSQL(name, sql string) *Column {
+	result := newColumn(m, strs.Uppcase(name), "", TpSql, TpAny, "")
+	if result == nil {
+		return nil
+	}
+
+	result.Sql = sql
 
 	return result
 }

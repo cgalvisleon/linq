@@ -124,7 +124,12 @@ func (d *Postgres) CountSql(l *linq.Linq) (string, error) {
 
 // SelectSql return the sql to select
 func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
-	s := sqlColumns(l.Selects...)
+	var s string
+	if l.TypeSelect == linq.TpRow {
+		s = sqlColumns(l, l.Selects...)
+	} else {
+		s = sqlData(l, l.Selects...)
+	}
 	l.Sql = strs.Format(`SELECT %s`, s)
 
 	return l.Sql, nil

@@ -18,7 +18,7 @@ func (l *Linq) addRetuns(model *Model, name string) *Lselect {
 		}
 	}
 
-	result := l.addColumn(column)
+	result := l.GetColumn(column)
 	l.Returns = append(l.Selects, result)
 
 	return result

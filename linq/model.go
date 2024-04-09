@@ -233,7 +233,7 @@ func (m *Model) AddForeignKey(name, description string, foreignKey []string, par
 // Define a detail collumn to the model
 func (m *Model) Details(name, description string, _default any, details Details) *Column {
 	result := newColumn(m, name, description, TpDetail, TpAny, _default)
-	result.Hidden = true
+	result.SetHidden(true)
 	result.Details = details
 
 	return result
