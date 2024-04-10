@@ -110,6 +110,20 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 	return strs.Format(`%s AS _DATA`, result)
 }
 
+// Add select to sql
+func sqlSelect(l *linq.Linq) {
+	var result string
+	if l.TypeSelect == linq.TpRow {
+		def := sqlColumns(l, l.Selects...)
+		result = strs.Format(`SELECT %s`, def)
+	} else {
+		def := sqlData(l, l.Selects...)
+		result = strs.Format(`SELECT %s`, def)
+	}
+
+	l.Sql = strs.Append(l.Sql, result, "\n")
+}
+
 // Add from to sql
 func sqlFrom(l *linq.Linq) error {
 	if len(l.Froms) == 0 {
@@ -142,28 +156,84 @@ func sqlJoin(l *linq.Linq) {
 
 // Add where to sql
 func sqlWhere(l *linq.Linq) {
+	var result string
+	for i, v := range l.Wheres {
+		if i == 0 {
+			result = strs.Format(`WHERE %s`, v.Where())
+		} else {
+			def := strs.Format(`%s %s`, strs.Uppcase(v.Connetor), v.Where())
+			result = strs.Append(result, def, "\n")
+		}
+	}
 
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
 // Add group by to sql
 func sqlGroupBy(l *linq.Linq) {
+	var result string
+	for i, v := range l.Groups {
+		if i == 0 {
+			result = strs.Format(`GROUP BY %s`, v.As())
+		} else {
+			result = strs.Append(result, v.As(), ", ")
+		}
+	}
 
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
 // Add order by to sql
 func sqlOrderBy(l *linq.Linq) {
+	var result string
+	for i, v := range l.Orders {
+		if i == 0 {
+			result = strs.Format(`ORDER BY %s %s`, v.As(), v.Sorted())
+		} else {
+			def := strs.Format(`%s %s`, v.As(), v.Sorted())
+			result = strs.Append(result, def, ", ")
+		}
+	}
 
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
 // Add limit to sql
 func sqlLimit(l *linq.Linq) {
+	var result string
+	if l.Limit > 0 {
+		result = strs.Format(`LIMIT %d`, l.Limit)
+	}
 
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
 func sqlOffset(l *linq.Linq) {
+	var result string
+	if l.Rows > 0 {
+		result = strs.Format(`LIMIT %d OFFSET %d`, l.Rows, l.Offset)
+	}
 
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
 func sqlHaving(l *linq.Linq) {
 
+}
+
+func sqlReturns(l *linq.Linq) {
+	if len(l.Returns) == 0 {
+		return
+	}
+
+	var result string
+	if l.TypeSelect == linq.TpRow {
+		def := sqlColumns(l, l.Returns...)
+		result = strs.Format(`RETURNING %s`, def)
+	} else {
+		def := sqlData(l, l.Returns...)
+		result = strs.Format(`RETURNING %s`, def)
+	}
+
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }

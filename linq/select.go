@@ -80,6 +80,7 @@ func (l *Lselect) SetAs(name string) *Lselect {
 	return l
 }
 
+// As method to use set as name to column in linq
 func (l *Lselect) As() string {
 	switch l.TypeFunction {
 	case TpCount:

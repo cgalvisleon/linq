@@ -38,17 +38,22 @@ func main() {
 
 	A := User
 	B := Modelo
-	l := linq.From(A).
-		Join(A, B, A.C("_id").Eq(B.C("user_id")))
-
-	s, err := l.
-		SQL()
+	_, err := linq.From(A).
+		Join(A, B, A.C("_id").Eq(B.C("user_id"))).
+		Where(A.C("username").Eq("test")).
+		And(A.C("password").Eq("test")).
+		GroupBy(A.C("username"), A.C("password")).
+		OrderBy(A.C("username")).
+		Desc(A.C("password")).
+		Debug().
+		// First().
+		Page(1, 10)
 	if err != nil {
 		logs.Error(err)
 	}
 
 	// logs.Debug(A.Definition().ToString())
 	// logs.Debug(B.Definition().ToString())
-	logs.Debug(l.Definition().ToString())
-	logs.Debug(s)
+	// logs.Debug(l.Definition().ToString())
+	// logs.Debug(s)
 }

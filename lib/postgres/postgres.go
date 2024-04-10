@@ -124,13 +124,7 @@ func (d *Postgres) CountSql(l *linq.Linq) (string, error) {
 
 // SelectSql return the sql to select
 func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
-	var s string
-	if l.TypeSelect == linq.TpRow {
-		s = sqlColumns(l, l.Selects...)
-	} else {
-		s = sqlData(l, l.Selects...)
-	}
-	l.Sql = strs.Format(`SELECT %s`, s)
+	sqlSelect(l)
 
 	sqlFrom(l)
 
@@ -143,6 +137,12 @@ func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
 	sqlOrderBy(l)
 
 	sqlLimit(l)
+
+	sqlOffset(l)
+
+	sqlHaving(l)
+
+	sqlReturns(l)
 
 	return l.Sql, nil
 }

@@ -2,23 +2,7 @@ package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/logs"
 )
-
-// GroupBy struct to use in linq
-type Lgroup struct {
-	Linq   *Linq
-	Column *Column
-	As     string
-}
-
-// Definition method to use in linq
-func (l *Lgroup) Definition() et.Json {
-	return et.Json{
-		"column": l.Column.Name,
-		"as":     l.As,
-	}
-}
 
 // TypeQuery struct to use in linq
 type TypeQuery int
@@ -70,6 +54,7 @@ type Linq struct {
 	TypeSelect TypeSelect
 	TypeQuery  TypeQuery
 	Sql        string
+	debug      bool
 }
 
 func (l *Linq) Definition() *et.Json {
@@ -147,7 +132,7 @@ func (l *Linq) Definition() *et.Json {
 
 // AddSelect method to use in linq
 func (l *Linq) Debug() *Linq {
-	logs.Log("debug", l.Sql)
+	l.debug = true
 
 	return l
 }

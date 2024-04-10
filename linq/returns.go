@@ -6,7 +6,7 @@ import (
 	"github.com/cgalvisleon/et/et"
 )
 
-func (l *Linq) addRetuns(model *Model, name string) *Lselect {
+func (l *Linq) GetRetun(model *Model, name string) *Lselect {
 	column := COlumn(model, name)
 	if column == nil {
 		return nil
@@ -28,20 +28,20 @@ func (l *Linq) REturns(sel ...any) (et.Items, error) {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
-			l.addRetuns(v.Model, v.Name)
+			l.GetRetun(v.Model, v.Name)
 		case *Column:
-			l.addRetuns(v.Model, v.Name)
+			l.GetRetun(v.Model, v.Name)
 		case string:
 			sp := strings.Split(v, ".")
 			if len(sp) > 1 {
 				n := sp[0]
 				m := l.Db.Model(n)
 				if m != nil {
-					l.addRetuns(m, sp[1])
+					l.GetRetun(m, sp[1])
 				}
 			} else {
 				m := l.Froms[0].Model
-				l.addRetuns(m, v)
+				l.GetRetun(m, v)
 			}
 		}
 	}

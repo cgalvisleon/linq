@@ -2,6 +2,7 @@ package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
 )
 
 func (l *Linq) SQL() (string, error) {
@@ -48,6 +49,13 @@ func (l *Linq) Query() (et.Items, error) {
 	l.Sql, err = l.selectSql()
 	if err != nil {
 		return et.Items{}, err
+	}
+
+	if l.debug {
+		logs.Debug(l.Definition().ToString())
+		logs.Debug(l.Sql)
+
+		return et.Items{}, nil
 	}
 
 	result, err := l.query()
