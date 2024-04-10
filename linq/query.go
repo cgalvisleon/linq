@@ -56,7 +56,7 @@ func (l *Linq) Query() (et.Items, error) {
 	}
 
 	for _, data := range result.Result {
-		l.GetDetails(&data)
+		l.FuncDetail(&data)
 	}
 
 	return result, nil

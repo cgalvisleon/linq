@@ -6,7 +6,7 @@ import "github.com/cgalvisleon/et/et"
 type FuncDetail func(col *Column, data *et.Json)
 
 // Details method to use in linq
-func (l *Linq) GetDetails(data *et.Json) *et.Json {
+func (l *Linq) FuncDetail(data *et.Json) *et.Json {
 	for _, col := range l.Details {
 		col.FuncDetail(data)
 	}

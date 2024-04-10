@@ -47,8 +47,8 @@ func main() {
 		logs.Error(err)
 	}
 
-	logs.Debug(A.Definition().ToString())
-	logs.Debug(B.Definition().ToString())
+	// logs.Debug(A.Definition().ToString())
+	// logs.Debug(B.Definition().ToString())
 	logs.Debug(l.Definition().ToString())
 	logs.Debug(s)
 }

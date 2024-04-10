@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/strs"
 )
 
 type TypeFunction int
@@ -73,30 +74,37 @@ func (l *Lselect) Definition() et.Json {
 }
 
 // As method to use set as name to column in linq
-func (l *Lselect) As(name string) *Lselect {
+func (l *Lselect) SetAs(name string) *Lselect {
 	l.AS = name
 
 	return l
 }
 
+func (l *Lselect) As() string {
+	switch l.TypeFunction {
+	case TpCount:
+		def := strs.Format(`%s.%s`, l.From.AS, l.AS)
+		return strs.Format(`COUNT(%s)`, def)
+	case TpSum:
+		def := strs.Format(`%s.%s`, l.From.AS, l.AS)
+		return strs.Format(`SUM(%s)`, def)
+	case TpAvg:
+		def := strs.Format(`%s.%s`, l.From.AS, l.AS)
+		return strs.Format(`AVG(%s)`, def)
+	case TpMax:
+		def := strs.Format(`%s.%s`, l.From.AS, l.AS)
+		return strs.Format(`MAX(%s)`, def)
+	case TpMin:
+		def := strs.Format(`%s.%s`, l.From.AS, l.AS)
+		return strs.Format(`MIN(%s)`, def)
+	default:
+		return strs.Format(`%s.%s`, l.From.AS, l.AS)
+	}
+}
+
 // Details method to use in linq
 func (l *Lselect) FuncDetail(data *et.Json) {
 	l.Column.FuncDetail(l.Column, data)
-}
-
-// Add column to select by name
-func (l *Linq) GetColumn(column *Column) *Lselect {
-	for _, v := range l.Columns {
-		if v.Column == column {
-			return v
-		}
-	}
-
-	lform := l.GetFrom(column.Model)
-	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
-	l.Columns = append(l.Columns, result)
-
-	return result
 }
 
 // Add column to details
@@ -107,22 +115,42 @@ func (l *Linq) getDetail(column *Column) *Lselect {
 		}
 	}
 
-	result := l.GetColumn(column)
+	lform := l.GetFrom(column.Model)
+	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
 	l.Details = append(l.Details, result)
 
 	return result
 }
 
 // Add column to select by name
-func (l *Linq) getSelect(model *Model, name string) *Lselect {
+func (l *Linq) GetColumn(column *Column) *Lselect {
+	for _, v := range l.Columns {
+		if v.Column == column {
+			return v
+		}
+	}
+
+	var result *Lselect
+	if column.TypeColumn == TpDetail {
+		result = l.getDetail(column)
+	} else {
+		lform := l.GetFrom(column.Model)
+		result = &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
+	}
+
+	l.Columns = append(l.Columns, result)
+
+	return result
+}
+
+// Add column to select by name
+func (l *Linq) GetSelect(model *Model, name string) *Lselect {
 	column := COlumn(model, name)
 	if column == nil {
 		return nil
 	}
 
-	if column.TypeColumn == TpDetail {
-		return l.getDetail(column)
-	}
+	result := l.GetColumn(column)
 
 	for _, v := range l.Selects {
 		if v.Column == column {
@@ -130,7 +158,6 @@ func (l *Linq) getSelect(model *Model, name string) *Lselect {
 		}
 	}
 
-	result := l.GetColumn(column)
 	l.Selects = append(l.Selects, result)
 
 	return result
@@ -144,11 +171,11 @@ func (m *Model) Select(sel ...any) *Linq {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
-			l.getSelect(v.Model, v.Name)
+			l.GetSelect(v.Model, v.Name)
 		case *Column:
-			l.getSelect(v.Model, v.Name)
+			l.GetSelect(v.Model, v.Name)
 		case string:
-			l.getSelect(m, v)
+			l.GetSelect(m, v)
 		}
 	}
 
@@ -231,7 +258,7 @@ func (l *Linq) Skip(n int) (et.Items, error) {
 	}
 
 	for _, data := range result.Result {
-		l.GetDetails(&data)
+		l.FuncDetail(&data)
 	}
 
 	return result, nil
@@ -318,20 +345,20 @@ func (l *Linq) Select(sel ...any) (et.Items, error) {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
-			l.getSelect(v.Model, v.Name)
+			l.GetSelect(v.Model, v.Name)
 		case *Column:
-			l.getSelect(v.Model, v.Name)
+			l.GetSelect(v.Model, v.Name)
 		case string:
 			sp := strings.Split(v, ".")
 			if len(sp) > 1 {
 				n := sp[0]
 				m := l.Db.Model(n)
 				if m != nil {
-					l.getSelect(m, sp[1])
+					l.GetSelect(m, sp[1])
 				}
 			} else {
 				m := l.Froms[0].Model
-				l.getSelect(m, v)
+				l.GetSelect(m, v)
 			}
 		}
 	}

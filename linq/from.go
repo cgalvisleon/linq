@@ -57,9 +57,9 @@ type Lfrom struct {
 
 // Definition method to use in linq
 func (l *Lfrom) Definition() et.Json {
-	model := et.Json{}
+	model := ""
 	if l.Model != nil {
-		model = l.Model.Definition()
+		model = l.Model.Name
 	}
 
 	return et.Json{

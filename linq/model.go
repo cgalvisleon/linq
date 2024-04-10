@@ -2,7 +2,6 @@ package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -134,8 +133,6 @@ func (m *Model) Definition() et.Json {
 		"foreignKey":  m.ForeignKey,
 		"index":       index,
 	}
-
-	logs.Info("Model: ", result.ToString())
 
 	return result
 }

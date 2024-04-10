@@ -83,6 +83,11 @@ func (l *Linq) Definition() *et.Json {
 		columns = append(columns, c.Definition())
 	}
 
+	var details []et.Json = []et.Json{}
+	for _, d := range l.Details {
+		details = append(details, d.Definition())
+	}
+
 	var selects []et.Json = []et.Json{}
 	for _, s := range l.Selects {
 		selects = append(selects, s.Definition())
@@ -122,6 +127,7 @@ func (l *Linq) Definition() *et.Json {
 		"as":         l.as,
 		"froms":      froms,
 		"columns":    columns,
+		"details":    details,
 		"selects":    selects,
 		"wheres":     wheres,
 		"groups":     groups,

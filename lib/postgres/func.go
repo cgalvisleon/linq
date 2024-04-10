@@ -44,7 +44,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 	appendObjects := func(val string) {
 		objects = strs.Append(objects, val, ",\n")
 		n++
-		if n == 20 {
+		if n >= 20 {
 			def = strs.Format("jsonb_build_object(\n%s)", objects)
 			result = strs.Append(result, def, "||")
 			objects = ""
@@ -55,10 +55,10 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
 		m := f.Model
 		if c.IsData {
+			s := l.GetColumn(c)
 			switch c.TypeColumn {
 			case linq.TpColumn: // 'name', A.NAME
-				def = strs.Format(`%s.%s`, f.AS, c.Up())
-				def = strs.Format(`'%s', %s`, c.Low(), def)
+				def = strs.Format(`'%s', %s`, c.Low(), s.As())
 				appendObjects(def)
 			case linq.TpAtrib: // 'name', A._DATA#>>'{name}'
 				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(m.SourceField), c.Low())
@@ -129,11 +129,15 @@ func sqlJoin(l *linq.Linq) {
 	for _, v := range l.Joins {
 		switch v.TypeJoin {
 		case linq.Inner:
-			def := strs.Format(`INNER JOIN %s AS %s ON %s`, v.T2.Table(), v.T2.AS, v.On)
-			result = strs.Append(result, def, "\n")
+			result = strs.Format(`INNER JOIN %s AS %s ON %s`, v.T2.Table(), v.T2.AS, v.On.Where())
+		case linq.Left:
+			result = strs.Format(`LEFT JOIN %s AS %s ON %s`, v.T2.Table(), v.T2.AS, v.On.Where())
+		case linq.Right:
+			result = strs.Format(`RIGHT JOIN %s AS %s ON %s`, v.T2.Table(), v.T2.AS, v.On.Where())
 		}
 	}
 
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
 // Add where to sql

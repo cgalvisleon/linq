@@ -1,7 +1,10 @@
 package linq
 
 import (
+	"reflect"
+
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -14,29 +17,45 @@ type Lwhere struct {
 	Connetor string
 }
 
-// Where function to use in linq
-func Where(column *Column, operator string, value interface{}) *Lwhere {
-	return &Lwhere{
-		Column:   &Lselect{Column: column, AS: column.Name},
-		Operator: operator,
-		Value:    value,
-	}
-}
-
 // Definition method to use in linq
 func (w *Lwhere) Definition() et.Json {
+	value := w.value()
+
 	return et.Json{
-		"column":   w.Column.Definition(),
+		"column":   w.Column.As(),
 		"operator": w.Operator,
-		"value":    w.Value,
+		"value":    value,
 		"connetor": w.Connetor,
 	}
 }
 
+func (w *Lwhere) value() string {
+	var value string
+	switch v := w.Value.(type) {
+	case string:
+		value = strs.Format(`"%s"`, v)
+	case *Column:
+		s := w.Linq.GetColumn(v)
+		value = s.As()
+	case Column:
+		s := w.Linq.GetColumn(&v)
+		value = s.As()
+	case *Lselect:
+		value = v.As()
+	case Lselect:
+		value = v.As()
+	default:
+		logs.Debug(reflect.TypeOf(v))
+	}
+
+	return value
+}
+
 // Where method to use in linq
 func (w *Lwhere) Where() string {
-	val := w.Value
-	return strs.Format(`%s %s %s`, w.Column.AS, w.Operator, val)
+	value := w.value()
+
+	return strs.Format(`%s %s %s`, w.Column.As(), w.Operator, value)
 }
 
 // setLinq to where
@@ -49,6 +68,15 @@ func (w *Lwhere) setLinq(l *Linq) *Lwhere {
 	_select.From = _from
 
 	return w
+}
+
+// Where function to use in linq
+func Where(column *Column, operator string, value interface{}) *Lwhere {
+	return &Lwhere{
+		Column:   &Lselect{Column: column, AS: column.Name},
+		Operator: operator,
+		Value:    value,
+	}
 }
 
 // Where method to use in linq
