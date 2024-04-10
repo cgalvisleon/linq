@@ -15,30 +15,40 @@ func main() {
 		"password": "test",
 	})
 	schema := linq.NewSchema("test", "description")
-	A := linq.NewModel(schema, "User", "", 1)
-	A.DefineColum("_id", "", linq.TpKey, "")
-	A.DefineColum("username", "", linq.TpString, "")
-	A.DefineColum("password", "", linq.TpString, "")
+	User := linq.NewModel(schema, "User", "", 1)
+	User.DefineColum("_id", "", linq.TpKey, "")
+	User.DefineColum("username", "", linq.TpString, "")
+	User.DefineColum("password", "", linq.TpString, "")
+	User.DefineColum("_data", "", linq.TpJson, "{}")
+	User.DefineAtrib("name", "", linq.TpString, "")
 
-	B := linq.NewModel(schema, "Model", "", 1)
-	B.DefineColum("_id", "", linq.TpKey, "")
-	B.DefineColum("name", "", linq.TpString, "")
-	B.DefineColum("description", "", linq.TpString, "")
-	B.DefineColum("user_id", "", linq.TpKey, "")
+	Modelo := linq.NewModel(schema, "Model", "", 1)
+	Modelo.DefineColum("_id", "", linq.TpKey, "")
+	Modelo.DefineColum("name", "", linq.TpString, "")
+	Modelo.DefineColum("description", "", linq.TpString, "")
+	Modelo.DefineColum("user_id", "", linq.TpKey, "")
 
-	if db.InitModel(A) != nil {
+	if db.InitModel(User) != nil {
 		logs.Errorm("Error")
 	}
 
-	if db.InitModel(B) != nil {
+	if db.InitModel(Modelo) != nil {
 		logs.Errorm("Error")
 	}
 
+	A := User
+	B := Modelo
 	l := linq.From(A).
-		Debug()
+		Join(A, B, A.C("_id").Eq(B.C("user_id")))
 
-	s := l.Definition()
+	s, err := l.
+		SQL()
+	if err != nil {
+		logs.Error(err)
+	}
+
 	logs.Debug(A.Definition().ToString())
 	logs.Debug(B.Definition().ToString())
-	logs.Debug(s.ToString())
+	logs.Debug(l.Definition().ToString())
+	logs.Debug(s)
 }

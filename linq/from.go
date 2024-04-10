@@ -75,6 +75,12 @@ func (l *Lfrom) As(name string) *Lfrom {
 	return l
 }
 
+// Return table name in linq
+func (l *Lfrom) Table() string {
+	return l.Model.Table
+}
+
+// Return as column name in linq
 func (l *Lfrom) AsColumn(col *Column) string {
 	if l.Model == col.Model {
 		return strs.Format(`%s.%s`, l.AS, col.Name)
@@ -83,10 +89,24 @@ func (l *Lfrom) AsColumn(col *Column) string {
 	return col.Name
 }
 
+// Find column in module to linq
+func (l *Lfrom) Column(name string) *Column {
+	return l.Model.Column(name)
+}
+
+// Shortcut to column in module to linq
+func (l *Lfrom) Col(name string) *Column {
+	return l.Column(name)
+}
+
+// Shortcut to column in module to linq
+func (l *Lfrom) C(name string) *Column {
+	return l.Column(name)
+}
+
 // From method new linq
 func From(model *Model) *Linq {
 	result := &Linq{
-		Db:      model.Db,
 		Froms:   []*Lfrom{},
 		Columns: []*Lselect{},
 		Selects: []*Lselect{},
@@ -110,7 +130,12 @@ func From(model *Model) *Linq {
 		Sql:        "",
 	}
 
+	if model.UseSource {
+		result.TypeSelect = TpData
+	}
+
 	as := getAs(result)
+	result.Db = model.Db
 	result.Froms = append(result.Froms, &Lfrom{Linq: result, Model: model, AS: as})
 
 	return result

@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 	"github.com/cgalvisleon/linq/linq"
 )
@@ -41,10 +42,10 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 	}
 
 	appendObjects := func(val string) {
-		objects = strs.Append(objects, val, ",")
+		objects = strs.Append(objects, val, ",\n")
 		n++
 		if n == 20 {
-			def = strs.Format(`jsonb_build_object(%s)`, objects)
+			def = strs.Format("jsonb_build_object(\n%s)", objects)
 			result = strs.Append(result, def, "||")
 			objects = ""
 			n = 0
@@ -91,7 +92,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 			appendColumns(f, c)
 		}
 		if n > 0 {
-			def = strs.Format(`jsonb_build_object(%s)`, objects)
+			def = strs.Format("jsonb_build_object(\n%s)", objects)
 			result = strs.Append(result, def, "||")
 		}
 
@@ -102,9 +103,63 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 		appendColumns(c.From, c.Column)
 	}
 	if n > 0 {
-		def = strs.Format(`jsonb_build_object(%s)`, objects)
+		def = strs.Format("jsonb_build_object(\n%s)", objects)
 		result = strs.Append(result, def, "||")
 	}
 
 	return strs.Format(`%s AS _DATA`, result)
+}
+
+// Add from to sql
+func sqlFrom(l *linq.Linq) error {
+	if len(l.Froms) == 0 {
+		return logs.Errorm("From is required")
+	}
+
+	f := l.Froms[0]
+	result := strs.Format(`FROM %s AS %s`, f.Model.Table, f.AS)
+	l.Sql = strs.Append(l.Sql, result, "\n")
+
+	return nil
+}
+
+// Add join to sql
+func sqlJoin(l *linq.Linq) {
+	var result string
+	for _, v := range l.Joins {
+		switch v.TypeJoin {
+		case linq.Inner:
+			def := strs.Format(`INNER JOIN %s AS %s ON %s`, v.T2.Table(), v.T2.AS, v.On)
+			result = strs.Append(result, def, "\n")
+		}
+	}
+
+}
+
+// Add where to sql
+func sqlWhere(l *linq.Linq) {
+
+}
+
+// Add group by to sql
+func sqlGroupBy(l *linq.Linq) {
+
+}
+
+// Add order by to sql
+func sqlOrderBy(l *linq.Linq) {
+
+}
+
+// Add limit to sql
+func sqlLimit(l *linq.Linq) {
+
+}
+
+func sqlOffset(l *linq.Linq) {
+
+}
+
+func sqlHaving(l *linq.Linq) {
+
 }

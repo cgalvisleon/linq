@@ -96,7 +96,7 @@ type Column struct {
 	Sql         string
 	References  []*Column
 	Dependents  []*Column
-	Details     Details
+	FuncDetail  FuncDetail
 	Indexed     bool
 	Unique      bool
 	Required    bool
@@ -156,28 +156,28 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	}
 
 	if !model.UseSource {
-		model.UseSource = result.Name == model.SourceField
+		model.UseSource = result.Up() == strs.Uppcase(model.SourceField)
 		result.SourceField = model.UseSource
 	}
 
 	if !model.UseDateMake {
-		model.UseDateMake = result.Name == model.DateMakeField
+		model.UseDateMake = result.Up() == strs.Uppcase(model.DateMakeField)
 	}
 
 	if !model.UseDateUpdate {
-		model.UseDateUpdate = result.Name == model.DateUpdateField
+		model.UseDateUpdate = result.Up() == strs.Uppcase(model.DateUpdateField)
 	}
 
 	if !model.UseIndex {
-		model.UseIndex = result.Name == model.IndexField
+		model.UseIndex = result.Up() == strs.Uppcase(model.IndexField)
 	}
 
 	if !model.UseState {
-		model.UseState = result.Name == model.StateField
+		model.UseState = result.Up() == strs.Uppcase(model.StateField)
 	}
 
 	if !model.UseProject {
-		model.UseState = result.Name == model.ProjectField
+		model.UseState = result.Up() == strs.Uppcase(model.ProjectField)
 	}
 
 	if result.SourceField {
@@ -200,15 +200,15 @@ func (c *Column) describe() et.Json {
 	return et.Json{
 		"name":        c.Name,
 		"description": c.Description,
-		"type_column": c.TypeColumn,
-		"type_data":   c.TypeData,
+		"type_column": c.TypeColumn.String(),
+		"type_data":   c.TypeData.String(),
 		"default":     c.Default,
 		"indexed":     c.Indexed,
 		"unique":      c.Unique,
 		"required":    c.Required,
 		"primaryKey":  c.PrimaryKey,
 		"foreignKey":  c.ForeignKey,
-		"hidden":      c.IsHidden,
+		"hidden":      c.IsHidden(),
 	}
 }
 
@@ -230,7 +230,7 @@ func (c *Column) Describe() et.Json {
 		"required":    c.Required,
 		"primaryKey":  c.PrimaryKey,
 		"foreignKey":  c.ForeignKey,
-		"hidden":      c.IsHidden,
+		"hidden":      c.IsHidden(),
 		"atribs":      atribs,
 	}
 }

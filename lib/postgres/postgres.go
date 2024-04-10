@@ -132,6 +132,18 @@ func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
 	}
 	l.Sql = strs.Format(`SELECT %s`, s)
 
+	sqlFrom(l)
+
+	sqlJoin(l)
+
+	sqlWhere(l)
+
+	sqlGroupBy(l)
+
+	sqlOrderBy(l)
+
+	sqlLimit(l)
+
 	return l.Sql, nil
 }
 

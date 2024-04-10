@@ -34,11 +34,15 @@ type Index struct {
 	Asc    bool
 }
 
+func (i *Index) Describe() et.Json {
+	return et.Json{
+		"column": i.Column.Name,
+		"asc":    i.Asc,
+	}
+}
+
 // Trigger is a function for trigger
 type Trigger func(model *Model, old, new *et.Json, data et.Json) error
-
-// Details is a function for details
-type Details func(col *Column, data *et.Json)
 
 // Listener is a function for listener
 type Listener func(data et.Json)
@@ -113,12 +117,12 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 func (m *Model) Definition() et.Json {
 	var columns []et.Json = []et.Json{}
 	for _, v := range m.Columns {
-		columns = append(columns, v.describe())
+		columns = append(columns, v.Describe())
 	}
 
 	var index []et.Json = []et.Json{}
 	for _, v := range m.Index {
-		index = append(index, et.Json{"column": v.Column.Name, "asc": v.Asc})
+		index = append(index, v.Describe())
 	}
 
 	result := et.Json{
@@ -228,13 +232,4 @@ func (m *Model) AddForeignKey(name, description string, foreignKey []string, par
 	}
 
 	m.ForeignKey = append(m.ForeignKey, &Constraint{Name: name, Description: description, ForeignKey: foreignKey, ParentModel: parentModel, ParentKey: parentKey})
-}
-
-// Define a detail collumn to the model
-func (m *Model) Details(name, description string, _default any, details Details) *Column {
-	result := newColumn(m, name, description, TpDetail, TpAny, _default)
-	result.SetHidden(true)
-	result.Details = details
-
-	return result
 }

@@ -146,15 +146,6 @@ func (l *Linq) Debug() *Linq {
 	return l
 }
 
-// Details method to use in linq
-func (l *Linq) GetDetails(data *et.Json) *et.Json {
-	for _, col := range l.Details {
-		col.Details(data)
-	}
-
-	return data
-}
-
 // Return sql count by linq
 func (l *Linq) countSql() (string, error) {
 	return l.Db.countSql(l)

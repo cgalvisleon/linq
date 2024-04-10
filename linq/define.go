@@ -104,6 +104,16 @@ func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Co
 	return result
 }
 
+// Define a detail collumn to the model
+func (m *Model) DefineDetail(name, description string, _default any, funcDetail FuncDetail) *Column {
+	result := newColumn(m, name, description, TpDetail, TpAny, _default)
+	result.SetHidden(true)
+	result.FuncDetail = funcDetail
+
+	return result
+}
+
+// Define a sql column to the model
 func (m *Model) DefineSQL(name, sql string) *Column {
 	result := newColumn(m, strs.Uppcase(name), "", TpSql, TpAny, "")
 	if result == nil {

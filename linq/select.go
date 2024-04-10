@@ -80,8 +80,8 @@ func (l *Lselect) As(name string) *Lselect {
 }
 
 // Details method to use in linq
-func (l *Lselect) Details(data *et.Json) {
-	l.Column.Details(l.Column, data)
+func (l *Lselect) FuncDetail(data *et.Json) {
+	l.Column.FuncDetail(l.Column, data)
 }
 
 // Add column to select by name
@@ -99,11 +99,29 @@ func (l *Linq) GetColumn(column *Column) *Lselect {
 	return result
 }
 
+// Add column to details
+func (l *Linq) getDetail(column *Column) *Lselect {
+	for _, v := range l.Details {
+		if v.Column == column {
+			return v
+		}
+	}
+
+	result := l.GetColumn(column)
+	l.Details = append(l.Details, result)
+
+	return result
+}
+
 // Add column to select by name
-func (l *Linq) addSelect(model *Model, name string) *Lselect {
+func (l *Linq) getSelect(model *Model, name string) *Lselect {
 	column := COlumn(model, name)
 	if column == nil {
 		return nil
+	}
+
+	if column.TypeColumn == TpDetail {
+		return l.getDetail(column)
 	}
 
 	for _, v := range l.Selects {
@@ -126,11 +144,11 @@ func (m *Model) Select(sel ...any) *Linq {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
-			l.addSelect(v.Model, v.Name)
+			l.getSelect(v.Model, v.Name)
 		case *Column:
-			l.addSelect(v.Model, v.Name)
+			l.getSelect(v.Model, v.Name)
 		case string:
-			l.addSelect(m, v)
+			l.getSelect(m, v)
 		}
 	}
 
@@ -300,20 +318,20 @@ func (l *Linq) Select(sel ...any) (et.Items, error) {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
-			l.addSelect(v.Model, v.Name)
+			l.getSelect(v.Model, v.Name)
 		case *Column:
-			l.addSelect(v.Model, v.Name)
+			l.getSelect(v.Model, v.Name)
 		case string:
 			sp := strings.Split(v, ".")
 			if len(sp) > 1 {
 				n := sp[0]
 				m := l.Db.Model(n)
 				if m != nil {
-					l.addSelect(m, sp[1])
+					l.getSelect(m, sp[1])
 				}
 			} else {
 				m := l.Froms[0].Model
-				l.addSelect(m, v)
+				l.getSelect(m, v)
 			}
 		}
 	}
