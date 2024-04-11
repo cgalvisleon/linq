@@ -165,15 +165,6 @@ func (d *Database) QueryOne(sql string, args ...any) (et.Item, error) {
 	return d.Driver.QueryOne(sql, args...)
 }
 
-// CountSql return the sql to count
-func (d *Database) countSql(linq *Linq) (string, error) {
-	if d.Driver == nil {
-		return "", logs.Errorm("Driver is required")
-	}
-
-	return d.Driver.CountSql(linq)
-}
-
 // SelectSql return the sql to select
 func (d *Database) selectSql(linq *Linq) (string, error) {
 	if d.Driver == nil {

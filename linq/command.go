@@ -97,19 +97,18 @@ func (m *Model) Delete() *Linq {
 }
 
 func (l *Linq) Exec() error {
-	if l.TypeQuery != TpCommand {
-		return logs.Errorm("Command not found")
-	}
-
-	_, err := l.SQL()
+	var err error
+	l.Sql, err = l.execSql()
 	if err != nil {
 		return err
 	}
 
-	err = l.exec()
-	if err != nil {
-		return err
+	if l.debug {
+		logs.Debug(l.Definition().ToString())
+		logs.Debug(l.Sql)
+
+		return nil
 	}
 
-	return nil
+	return l.Db.Exec(l.Sql)
 }

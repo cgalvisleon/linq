@@ -108,9 +108,11 @@ func (l *Lfrom) C(name string) *Column {
 func From(model *Model) *Linq {
 	result := &Linq{
 		Froms:   []*Lfrom{},
-		Columns: []*Lselect{},
-		Selects: []*Lselect{},
-		Details: []*Lselect{},
+		Columns: NewColumns(),
+		Selects: NewColumns(),
+		Data:    NewColumns(),
+		Returns: NewColumns(),
+		Details: NewColumns(),
 		Wheres:  []*Lwhere{},
 		Groups:  []*Lgroup{},
 		Orders:  []*Lorder{},
@@ -125,13 +127,8 @@ func From(model *Model) *Linq {
 			New:         &et.Json{},
 			Update:      &et.Json{},
 		},
-		TypeSelect: TpRow,
-		TypeQuery:  TpSelect,
-		Sql:        "",
-	}
-
-	if model.UseSource {
-		result.TypeSelect = TpData
+		TypeQuery: TpSelect,
+		Sql:       "",
 	}
 
 	as := getAs(result)

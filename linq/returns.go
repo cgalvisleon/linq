@@ -12,19 +12,20 @@ func (l *Linq) GetRetun(model *Model, name string) *Lselect {
 		return nil
 	}
 
-	for _, v := range l.Returns {
+	for _, v := range l.Returns.Columns {
 		if v.Column == column {
 			return v
 		}
 	}
 
 	result := l.GetColumn(column)
-	l.Returns = append(l.Selects, result)
+	l.Returns.Columns = append(l.Returns.Columns, result)
+	l.Returns.Used = len(l.Returns.Columns) > 0
 
 	return result
 }
 
-func (l *Linq) REturns(sel ...any) (et.Items, error) {
+func (l *Linq) REturns(sel ...any) (et.Item, error) {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
@@ -46,5 +47,5 @@ func (l *Linq) REturns(sel ...any) (et.Items, error) {
 		}
 	}
 
-	return l.Query()
+	return l.QueryOne()
 }

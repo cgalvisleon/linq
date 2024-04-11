@@ -7,7 +7,7 @@ type FuncDetail func(col *Column, data *et.Json)
 
 // Details method to use in linq
 func (l *Linq) FuncDetail(data *et.Json) *et.Json {
-	for _, col := range l.Details {
+	for _, col := range l.Details.Columns {
 		col.FuncDetail(data)
 	}
 

@@ -5,42 +5,36 @@ import (
 	"github.com/cgalvisleon/et/logs"
 )
 
-func (l *Linq) SQL() (string, error) {
-	var err error
-	if l.TypeQuery == TpCommand {
-		switch l.Command.TypeCommand {
-		case TpInsert:
-			l.Sql, err = l.insertSql()
-			if err != nil {
-				return "", err
-			}
+// TypeQuery struct to use in linq
+type TypeQuery int
 
-			return l.Sql, nil
-		case TpUpdate:
-			l.Sql, err = l.updateSql()
-			if err != nil {
-				return "", err
-			}
+// Values for TypeQuery
+const (
+	TpSelect TypeQuery = iota
+	TpCommand
+	TpAll
+	TpLast
+	TpSkip
+	TpPage
+)
 
-			return l.Sql, nil
-		case TpDelete:
-			l.Sql, err = l.deleteSql()
-			if err != nil {
-				return "", err
-			}
-
-			return l.Sql, nil
-		}
-
-		return "", nil
+// String method to use in linq
+func (d TypeQuery) String() string {
+	switch d {
+	case TpSelect:
+		return "select"
+	case TpCommand:
+		return "command"
+	case TpAll:
+		return "all"
+	case TpLast:
+		return "last"
+	case TpSkip:
+		return "skip"
+	case TpPage:
+		return "page"
 	}
-
-	l.Sql, err = l.selectSql()
-	if err != nil {
-		return "", err
-	}
-
-	return l.Sql, nil
+	return ""
 }
 
 // Select query
@@ -58,7 +52,7 @@ func (l *Linq) Query() (et.Items, error) {
 		return et.Items{}, nil
 	}
 
-	result, err := l.query()
+	result, err := l.Db.Query(l.Sql)
 	if err != nil {
 		return et.Items{}, err
 	}
@@ -72,17 +66,25 @@ func (l *Linq) Query() (et.Items, error) {
 
 // Execute query and return item
 func (l *Linq) QueryOne() (et.Item, error) {
-	items, err := l.Query()
+	var err error
+	l.Sql, err = l.selectSql()
 	if err != nil {
 		return et.Item{}, err
 	}
 
-	if !items.Ok {
+	if l.debug {
+		logs.Debug(l.Definition().ToString())
+		logs.Debug(l.Sql)
+
 		return et.Item{}, nil
 	}
 
-	return et.Item{
-		Ok:     items.Ok,
-		Result: items.Result[0],
-	}, nil
+	result, err := l.Db.QueryOne(l.Sql)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	l.FuncDetail(&result.Result)
+
+	return result, nil
 }

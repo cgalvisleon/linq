@@ -44,25 +44,6 @@ type Lselect struct {
 	TypeFunction TypeFunction
 }
 
-// TypeSelect struct to use in linq
-type TypeSelect int
-
-// Values for TypeSelect
-const (
-	TpData TypeSelect = iota
-	TpRow
-)
-
-func (d TypeSelect) String() string {
-	switch d {
-	case TpData:
-		return "data"
-	case TpRow:
-		return "row"
-	}
-	return ""
-}
-
 // Definition method to use in linq
 func (l *Lselect) Definition() et.Json {
 	return et.Json{
@@ -109,8 +90,8 @@ func (l *Lselect) FuncDetail(data *et.Json) {
 }
 
 // Add column to details
-func (l *Linq) getDetail(column *Column) *Lselect {
-	for _, v := range l.Details {
+func (l *Linq) GetDetail(column *Column) *Lselect {
+	for _, v := range l.Details.Columns {
 		if v.Column == column {
 			return v
 		}
@@ -118,14 +99,15 @@ func (l *Linq) getDetail(column *Column) *Lselect {
 
 	lform := l.GetFrom(column.Model)
 	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
-	l.Details = append(l.Details, result)
+	l.Details.Columns = append(l.Details.Columns, result)
+	l.Details.Used = len(l.Details.Columns) > 0
 
 	return result
 }
 
-// Add column to select by name
+// Add column to columns
 func (l *Linq) GetColumn(column *Column) *Lselect {
-	for _, v := range l.Columns {
+	for _, v := range l.Columns.Columns {
 		if v.Column == column {
 			return v
 		}
@@ -133,13 +115,14 @@ func (l *Linq) GetColumn(column *Column) *Lselect {
 
 	var result *Lselect
 	if column.TypeColumn == TpDetail {
-		result = l.getDetail(column)
+		result = l.GetDetail(column)
 	} else {
 		lform := l.GetFrom(column.Model)
 		result = &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
 	}
 
-	l.Columns = append(l.Columns, result)
+	l.Columns.Columns = append(l.Columns.Columns, result)
+	l.Columns.Used = len(l.Columns.Columns) > 0
 
 	return result
 }
@@ -153,13 +136,35 @@ func (l *Linq) GetSelect(model *Model, name string) *Lselect {
 
 	result := l.GetColumn(column)
 
-	for _, v := range l.Selects {
+	for _, v := range l.Selects.Columns {
 		if v.Column == column {
 			return v
 		}
 	}
 
-	l.Selects = append(l.Selects, result)
+	l.Selects.Columns = append(l.Selects.Columns, result)
+	l.Selects.Used = len(l.Selects.Columns) > 0
+
+	return result
+}
+
+// Add column to data by name
+func (l *Linq) GetData(model *Model, name string) *Lselect {
+	column := COlumn(model, name)
+	if column == nil {
+		return nil
+	}
+
+	result := l.GetColumn(column)
+
+	for _, v := range l.Data.Columns {
+		if v.Column == column {
+			return v
+		}
+	}
+
+	l.Data.Columns = append(l.Data.Columns, result)
+	l.Data.Used = len(l.Data.Columns) > 0
 
 	return result
 }
@@ -167,72 +172,15 @@ func (l *Linq) GetSelect(model *Model, name string) *Lselect {
 // Select columns to use in linq
 func (m *Model) Select(sel ...any) *Linq {
 	l := From(m)
-	l.TypeSelect = TpRow
 
-	for _, col := range sel {
-		switch v := col.(type) {
-		case Column:
-			l.GetSelect(v.Model, v.Name)
-		case *Column:
-			l.GetSelect(v.Model, v.Name)
-		case string:
-			l.GetSelect(m, v)
-		}
-	}
-
-	return l
+	return l.Select(sel...)
 }
 
 // Select SourceField a linq with data
 func (m *Model) Data(sel ...any) *Linq {
-	result := m.Select(sel...)
-	if m.UseSource {
-		result.TypeSelect = TpData
-	}
+	l := From(m)
 
-	return result
-}
-
-// Numeric function to use in linq
-
-// Count function to use in linq
-func (l *Linq) Count(col *Column) *Linq {
-	sel := l.GetColumn(col)
-	sel.TypeFunction = TpCount
-
-	return l
-}
-
-// Sum function to use in linq
-func (l *Linq) Sum(col *Column) *Linq {
-	sel := l.GetColumn(col)
-	sel.TypeFunction = TpSum
-
-	return l
-}
-
-// Avg function to use in linq
-func (l *Linq) Avg(col *Column) *Linq {
-	sel := l.GetColumn(col)
-	sel.TypeFunction = TpAvg
-
-	return l
-}
-
-// Max function to use in linq
-func (l *Linq) Max(col *Column) *Linq {
-	sel := l.GetColumn(col)
-	sel.TypeFunction = TpMax
-
-	return l
-}
-
-// Min function to use in linq
-func (l *Linq) Min(col *Column) *Linq {
-	sel := l.GetColumn(col)
-	sel.TypeFunction = TpMin
-
-	return l
+	return l.DAta(sel...)
 }
 
 // Select query take n element data
@@ -319,13 +267,14 @@ func (l *Linq) Page(page, rows int) (et.Items, error) {
 
 // Select query list, include count, page and rows
 func (l *Linq) List(page, rows int) (et.List, error) {
+	l.TypeQuery = TpAll
 	var err error
-	l.Sql, err = l.countSql()
+	l.Sql, err = l.selectSql()
 	if err != nil {
 		return et.List{}, err
 	}
 
-	item, err := l.queryOne()
+	item, err := l.QueryOne()
 	if err != nil {
 		return et.List{}, err
 	}
@@ -341,8 +290,7 @@ func (l *Linq) List(page, rows int) (et.List, error) {
 }
 
 // Select  columns a query
-func (l *Linq) Select(sel ...any) (et.Items, error) {
-	l.TypeSelect = TpRow
+func (l *Linq) Select(sel ...any) *Linq {
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
@@ -364,13 +312,31 @@ func (l *Linq) Select(sel ...any) (et.Items, error) {
 		}
 	}
 
-	return l.Query()
+	return l
 }
 
 // Select SourceField a linq with data
-func (l *Linq) Data(sel ...any) (et.Items, error) {
-	l.Select(sel...)
-	l.TypeSelect = TpData
+func (l *Linq) DAta(sel ...any) *Linq {
+	for _, col := range sel {
+		switch v := col.(type) {
+		case Column:
+			l.GetData(v.Model, v.Name)
+		case *Column:
+			l.GetData(v.Model, v.Name)
+		case string:
+			sp := strings.Split(v, ".")
+			if len(sp) > 1 {
+				n := sp[0]
+				m := l.Db.Model(n)
+				if m != nil {
+					l.GetData(m, sp[1])
+				}
+			} else {
+				m := l.Froms[0].Model
+				l.GetData(m, v)
+			}
+		}
+	}
 
-	return l.Query()
+	return l
 }
