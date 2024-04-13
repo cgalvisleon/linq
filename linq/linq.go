@@ -58,7 +58,6 @@ type Linq struct {
 	Joins     []*Ljoin
 	Union     []*Linq
 	Limit     int
-	Rows      int
 	Offset    int
 	Command   *Lcommand
 	TypeQuery TypeQuery
@@ -111,7 +110,6 @@ func (l *Linq) Definition() *et.Json {
 		"joins":     joins,
 		"unions":    unions,
 		"limit":     l.Limit,
-		"rows":      l.Rows,
 		"offset":    l.Offset,
 		"command":   l.Command.Definition(),
 		"typeQuery": l.TypeQuery.String(),

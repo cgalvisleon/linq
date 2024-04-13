@@ -103,8 +103,6 @@ type Column struct {
 	RequiredMsg string
 	PrimaryKey  bool
 	ForeignKey  bool
-	IsSelect    bool
-	IsData      bool
 	hidden      bool
 	SourceField bool
 	Validation  Validation
@@ -151,8 +149,6 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		Atribs:      []*Column{},
 		Indexed:     false,
 		hidden:      false,
-		IsSelect:    true,
-		IsData:      true,
 	}
 
 	if !model.UseSource {
@@ -178,16 +174,6 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 
 	if !model.UseProject {
 		model.UseState = result.Up() == strs.Uppcase(model.ProjectField)
-	}
-
-	if result.SourceField {
-		result.IsSelect = true
-		result.IsData = false
-	}
-
-	if result.TypeColumn == TpDetail {
-		result.IsSelect = false
-		result.IsData = false
 	}
 
 	model.Columns = append(model.Columns, result)
@@ -260,8 +246,6 @@ func (c *Column) IsHidden() bool {
 // Hidden set hidden column
 func (c *Column) SetHidden(val bool) {
 	c.hidden = val
-	c.IsSelect = !val
-	c.IsData = !val
 }
 
 // Indexed add a index to column

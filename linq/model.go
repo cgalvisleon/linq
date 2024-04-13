@@ -57,6 +57,7 @@ type Model struct {
 	PrimaryKeys     []*Column
 	ForeignKey      []*Constraint
 	Index           []*Index
+	Details         []*Column
 	SourceField     string
 	DateMakeField   string
 	DateUpdateField string

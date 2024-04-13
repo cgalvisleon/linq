@@ -26,6 +26,8 @@ func (l *Linq) GetRetun(model *Model, name string) *Lselect {
 }
 
 func (l *Linq) REturns(sel ...any) (et.Item, error) {
+	l.Returns.Used = true
+
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:

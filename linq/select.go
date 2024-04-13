@@ -193,7 +193,7 @@ func (l *Linq) Take(n int) (et.Items, error) {
 // Select skip n element data
 func (l *Linq) Skip(n int) (et.Items, error) {
 	l.TypeQuery = TpSkip
-	l.Rows = 1
+	l.Limit = 1
 	l.Offset = n
 	var err error
 	l.Sql, err = l.selectSql()
@@ -259,7 +259,7 @@ func (l *Linq) Last() (et.Item, error) {
 func (l *Linq) Page(page, rows int) (et.Items, error) {
 	l.TypeQuery = TpPage
 	offset := (page - 1) * rows
-	l.Rows = rows
+	l.Limit = rows
 	l.Offset = offset
 
 	return l.Query()
@@ -291,6 +291,8 @@ func (l *Linq) List(page, rows int) (et.List, error) {
 
 // Select  columns a query
 func (l *Linq) Select(sel ...any) *Linq {
+	l.Selects.Used = true
+
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:
@@ -317,6 +319,8 @@ func (l *Linq) Select(sel ...any) *Linq {
 
 // Select SourceField a linq with data
 func (l *Linq) DAta(sel ...any) *Linq {
+	l.Data.Used = true
+
 	for _, col := range sel {
 		switch v := col.(type) {
 		case Column:

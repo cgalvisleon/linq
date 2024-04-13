@@ -11,16 +11,24 @@ func sqlColumns(l *linq.Linq, cols ...*linq.Lselect) string {
 	var result string
 
 	if len(l.Froms) == 0 {
-		return "*"
+		return ""
+	}
+
+	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
+		if c.TypeColumn == linq.TpDetail {
+			l.GetDetail(c)
+		} else {
+			l.GetColumn(c)
+			result = strs.Append(result, c.As(l), ",\n")
+		}
 	}
 
 	if len(cols) == 0 {
 		f := l.Froms[0]
-		return strs.Format(`%s.*`, f.AS)
-	}
 
-	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
-		result = strs.Append(result, c.As(l), ",\n")
+		for _, c := range f.Model.Columns {
+			appendColumns(f, c)
+		}
 	}
 
 	for _, c := range cols {
@@ -38,7 +46,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 	var n int
 
 	if len(l.Froms) == 0 {
-		return "*"
+		return ""
 	}
 
 	appendObjects := func(val string) {
@@ -54,7 +62,9 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 
 	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
 		m := f.Model
-		if c.IsData {
+		if c.TypeColumn == linq.TpDetail {
+			l.GetDetail(c)
+		} else if !c.SourceField {
 			s := l.GetColumn(c)
 			switch c.TypeColumn {
 			case linq.TpColumn: // 'name', A.NAME
@@ -96,7 +106,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 			result = strs.Append(result, def, "||")
 		}
 
-		return strs.Format(`%s AS _DATA`, result)
+		return strs.Format(`%s AS %s`, result, m.SourceField)
 	}
 
 	for _, c := range cols {
@@ -106,20 +116,24 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 		def = strs.Format("jsonb_build_object(\n%s)", objects)
 		result = strs.Append(result, def, "||")
 	}
+	f := l.Froms[0]
+	m := f.Model
 
-	return strs.Format(`%s AS _DATA`, result)
+	return strs.Format(`%s AS %s`, result, m.SourceField)
 }
 
 // Add select to sql
 func sqlSelect(l *linq.Linq) {
 	var result string
-	if l.TypeSelect == linq.TpRow {
-		def := sqlColumns(l, l.Selects...)
-		result = strs.Format(`SELECT %s`, def)
-	} else {
-		def := sqlData(l, l.Selects...)
-		result = strs.Format(`SELECT %s`, def)
+	if l.Selects.Used {
+		result = sqlColumns(l, l.Selects.Columns...)
 	}
+	if l.Data.Used {
+		def := sqlData(l, l.Data.Columns...)
+		result = strs.Append(result, def, ",\n")
+	}
+
+	result = strs.Append("SELECT", result, " ")
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }
@@ -200,6 +214,10 @@ func sqlOrderBy(l *linq.Linq) {
 
 // Add limit to sql
 func sqlLimit(l *linq.Linq) {
+	if l.TypeQuery != linq.TpSelect {
+		return
+	}
+
 	var result string
 	if l.Limit > 0 {
 		result = strs.Format(`LIMIT %d`, l.Limit)
@@ -209,9 +227,13 @@ func sqlLimit(l *linq.Linq) {
 }
 
 func sqlOffset(l *linq.Linq) {
+	if l.TypeQuery != linq.TpPage {
+		return
+	}
+
 	var result string
-	if l.Rows > 0 {
-		result = strs.Format(`LIMIT %d OFFSET %d`, l.Rows, l.Offset)
+	if l.Limit > 0 {
+		result = strs.Format(`LIMIT %d OFFSET %d`, l.Limit, l.Offset)
 	}
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
@@ -222,18 +244,19 @@ func sqlHaving(l *linq.Linq) {
 }
 
 func sqlReturns(l *linq.Linq) {
-	if len(l.Returns) == 0 {
+	if !l.Returns.Used {
 		return
 	}
 
-	var result string
-	if l.TypeSelect == linq.TpRow {
-		def := sqlColumns(l, l.Returns...)
-		result = strs.Format(`RETURNING %s`, def)
+	var def, result string
+	f := l.Froms[0]
+	m := f.Model
+	if m.UseSource {
+		def = sqlData(l, l.Returns.Columns...)
 	} else {
-		def := sqlData(l, l.Returns...)
-		result = strs.Format(`RETURNING %s`, def)
+		def = sqlColumns(l, l.Returns.Columns...)
 	}
+	result = strs.Format(`RETURNING %s`, def)
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }

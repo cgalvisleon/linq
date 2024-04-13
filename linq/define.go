@@ -110,6 +110,8 @@ func (m *Model) DefineDetail(name, description string, _default any, funcDetail 
 	result.SetHidden(true)
 	result.FuncDetail = funcDetail
 
+	m.Details = append(m.Details, result)
+
 	return result
 }
 

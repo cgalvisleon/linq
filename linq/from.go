@@ -118,7 +118,6 @@ func From(model *Model) *Linq {
 		Orders:  []*Lorder{},
 		Joins:   []*Ljoin{},
 		Limit:   0,
-		Rows:    0,
 		Offset:  0,
 		Command: &Lcommand{
 			From:        &Lfrom{},
@@ -132,6 +131,11 @@ func From(model *Model) *Linq {
 	}
 
 	as := getAs(result)
+	if model.UseSource {
+		result.Data.Used = true
+	} else {
+		result.Selects.Used = true
+	}
 	result.Db = model.Db
 	result.Froms = append(result.Froms, &Lfrom{Linq: result, Model: model, AS: as})
 
