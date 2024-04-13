@@ -52,8 +52,11 @@ type Linq struct {
 	Data      *Lcolumns
 	Returns   *Lcolumns
 	Details   *Lcolumns
+	Distinct  bool
 	Wheres    []*Lwhere
 	Groups    []*Lgroup
+	Havings   []*Lwhere
+	isHaving  bool
 	Orders    []*Lorder
 	Joins     []*Ljoin
 	Union     []*Linq
@@ -104,6 +107,7 @@ func (l *Linq) Definition() *et.Json {
 		"data":      l.Data.Definition(),
 		"returns":   l.Returns.Definition(),
 		"details":   l.Details.Definition(),
+		"distinct":  l.Distinct,
 		"wheres":    wheres,
 		"groups":    groups,
 		"orders":    orders,

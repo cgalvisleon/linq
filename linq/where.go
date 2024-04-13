@@ -83,6 +83,7 @@ func Where(column *Column, operator string, value interface{}) *Lwhere {
 func (l *Linq) Where(where *Lwhere) *Linq {
 	where.setLinq(l)
 	l.Wheres = append(l.Wheres, where)
+	l.isHaving = false
 
 	return l
 }
@@ -91,7 +92,11 @@ func (l *Linq) Where(where *Lwhere) *Linq {
 func (l *Linq) And(where *Lwhere) *Linq {
 	where.setLinq(l)
 	where.Connetor = "AND"
-	l.Wheres = append(l.Wheres, where)
+	if l.isHaving {
+		l.Havings = append(l.Havings, where)
+	} else {
+		l.Wheres = append(l.Wheres, where)
+	}
 
 	return l
 }
@@ -99,8 +104,12 @@ func (l *Linq) And(where *Lwhere) *Linq {
 // Or method to use in where linq
 func (l *Linq) Or(where *Lwhere) *Linq {
 	where.setLinq(l)
-	where.Connetor = "AND"
-	l.Wheres = append(l.Wheres, where)
+	where.Connetor = "OR"
+	if l.isHaving {
+		l.Havings = append(l.Havings, where)
+	} else {
+		l.Wheres = append(l.Wheres, where)
+	}
 
 	return l
 }

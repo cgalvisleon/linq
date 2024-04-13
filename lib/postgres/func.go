@@ -133,7 +133,11 @@ func sqlSelect(l *linq.Linq) {
 		result = strs.Append(result, def, ",\n")
 	}
 
-	result = strs.Append("SELECT", result, " ")
+	if l.Distinct {
+		result = strs.Append("SELECT DISTINCT", result, " ")
+	} else {
+		result = strs.Append("SELECT", result, " ")
+	}
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }
@@ -197,6 +201,20 @@ func sqlGroupBy(l *linq.Linq) {
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
+func sqlHaving(l *linq.Linq) {
+	var result string
+	for i, v := range l.Havings {
+		if i == 0 {
+			result = strs.Format(`HAVING %s`, v.Where())
+		} else {
+			def := strs.Format(`%s %s`, strs.Uppcase(v.Connetor), v.Where())
+			result = strs.Append(result, def, "\n")
+		}
+	}
+
+	l.Sql = strs.Append(l.Sql, result, "\n")
+}
+
 // Add order by to sql
 func sqlOrderBy(l *linq.Linq) {
 	var result string
@@ -237,10 +255,6 @@ func sqlOffset(l *linq.Linq) {
 	}
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
-}
-
-func sqlHaving(l *linq.Linq) {
-
 }
 
 func sqlReturns(l *linq.Linq) {

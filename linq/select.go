@@ -176,6 +176,12 @@ func (m *Model) Select(sel ...any) *Linq {
 	return l.Select(sel...)
 }
 
+func (m *Model) Distint(sel ...any) *Linq {
+	l := From(m)
+
+	return l.DIstinct(sel...)
+}
+
 // Select SourceField a linq with data
 func (m *Model) Data(sel ...any) *Linq {
 	l := From(m)
@@ -315,6 +321,13 @@ func (l *Linq) Select(sel ...any) *Linq {
 	}
 
 	return l
+}
+
+// Select distinct columns a query
+func (l *Linq) DIstinct(sel ...any) *Linq {
+	l.Distinct = true
+
+	return l.Select(sel...)
 }
 
 // Select SourceField a linq with data
