@@ -51,6 +51,7 @@ type Model struct {
 	Name            string
 	Description     string
 	Columns         []*Column
+	source          *Column
 	Schema          *Schema
 	Db              *Database
 	Table           string
@@ -96,6 +97,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		PrimaryKeys:     []*Column{},
 		ForeignKey:      []*Constraint{},
 		Index:           []*Index{},
+		Details:         []*Column{},
 		Version:         version,
 		SourceField:     schema.SourceField,
 		DateMakeField:   schema.DateMakeField,

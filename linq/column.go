@@ -48,6 +48,7 @@ const (
 	TpFloat
 	TpBool
 	TpDateTime
+	TpTimeStamp
 	TpJson
 	TpArray
 	TpSerie
@@ -70,6 +71,8 @@ func (t TypeData) String() string {
 		return "bool"
 	case TpDateTime:
 		return "datetime"
+	case TpTimeStamp:
+		return "timestamp"
 	case TpJson:
 		return "json"
 	case TpArray:
@@ -170,6 +173,9 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	if !model.UseSource {
 		model.UseSource = result.Up() == strs.Uppcase(model.SourceField)
 		result.SourceField = model.UseSource
+		if result.SourceField {
+			model.source = result
+		}
 	}
 
 	if !model.UseDateMake {

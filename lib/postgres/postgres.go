@@ -90,17 +90,6 @@ func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
 
 // InsertSql return the sql to insert
 func (d *Postgres) InsertSql(l *linq.Linq) (string, error) {
-	com := l.Command
-	f := com.From
-	m := f.Model
-
-	for _, trigger := range m.BeforeInsert {
-		err := trigger(m, nil, com.New, *com.Data)
-		if err != nil {
-			return "", err
-		}
-	}
-
 	sqlInsert(l)
 
 	sqlReturns(l)

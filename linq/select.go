@@ -201,18 +201,10 @@ func (l *Linq) Skip(n int) (et.Items, error) {
 	l.Limit = 1
 	l.Offset = n
 	var err error
-	l.Sql, err = l.selectSql()
-	if err != nil {
-		return et.Items{}, err
-	}
 
 	result, err := l.Query()
 	if err != nil {
 		return et.Items{}, err
-	}
-
-	for _, data := range result.Result {
-		l.FuncDetail(&data)
 	}
 
 	return result, nil

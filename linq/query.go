@@ -79,9 +79,40 @@ func (l *Linq) buildSql() error {
 	return nil
 }
 
+// Exec method to use in linq
+func (l *Linq) Exec() error {
+	if err := l.buildSql(); err != nil {
+		return err
+	}
+
+	err := l.funcBefore()
+	if err != nil {
+		return err
+	}
+
+	result, err := l.Db.Query(l.Sql)
+	if err != nil {
+		return err
+	}
+
+	l.Result = result
+
+	err = l.funcAfter()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Select query
 func (l *Linq) Query() (et.Items, error) {
 	if err := l.buildSql(); err != nil {
+		return et.Items{}, err
+	}
+
+	err := l.funcBefore()
+	if err != nil {
 		return et.Items{}, err
 	}
 
@@ -90,8 +121,11 @@ func (l *Linq) Query() (et.Items, error) {
 		return et.Items{}, err
 	}
 
-	for _, data := range result.Result {
-		l.FuncDetail(&data)
+	l.Result = result
+
+	err = l.funcAfter()
+	if err != nil {
+		return et.Items{}, err
 	}
 
 	return result, nil
@@ -103,12 +137,22 @@ func (l *Linq) QueryOne() (et.Item, error) {
 		return et.Item{}, err
 	}
 
+	err := l.funcBefore()
+	if err != nil {
+		return et.Item{}, err
+	}
+
 	result, err := l.Db.QueryOne(l.Sql)
 	if err != nil {
 		return et.Item{}, err
 	}
 
-	l.FuncDetail(&result.Result)
+	l.Result = result
+
+	err = l.funcAfter()
+	if err != nil {
+		return et.Item{}, err
+	}
 
 	return result, nil
 }

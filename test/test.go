@@ -16,6 +16,7 @@ func main() {
 	})
 	schema := linq.NewSchema("test", "description")
 	User := linq.NewModel(schema, "User", "", 1)
+	User.DefineColum("date_make", "", linq.TpTimeStamp, "NOW()")
 	User.DefineColum("_id", "", linq.TpKey, "")
 	User.DefineColum("username", "", linq.TpString, "")
 	User.DefineColum("password", "", linq.TpString, "")
@@ -23,6 +24,7 @@ func main() {
 	User.DefineAtrib("name", "", linq.TpString, "")
 
 	Modelo := linq.NewModel(schema, "Model", "", 1)
+	User.DefineColum("date_make", "", linq.TpTimeStamp, "")
 	Modelo.DefineColum("_id", "", linq.TpKey, "")
 	Modelo.DefineColum("name", "", linq.TpString, "")
 	Modelo.DefineColum("description", "", linq.TpString, "")
@@ -54,6 +56,7 @@ func main() {
 		Insert(et.Json{
 			"username": "test",
 			"password": "test",
+			"name":     "test",
 		}).
 		REturns().
 		Debug().

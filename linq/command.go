@@ -2,6 +2,8 @@ package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
+	"github.com/cgalvisleon/et/strs"
 )
 
 // TypeCommand struct to use in linq
@@ -79,8 +81,31 @@ func newCommand(from *Lfrom, tp TypeCommand) *Lcommand {
 
 // Add column to command colums
 func (l *Linq) commandAddColumn(c *Column, key string, value interface{}) {
-	l.Command.Columns = append(l.Command.Columns, c)
-	l.Command.New.Set(key, value)
+	if c.TypeColumn == TpAtrib {
+		for _, col := range l.Command.Atribs {
+			if col == c {
+				return
+			}
+		}
+
+		l.commandAddColumn(c.Model.source, c.Model.SourceField, c.Model.source.Default)
+		l.Command.Atribs = append(l.Command.Atribs, c)
+		sourceField := strs.Lowcase(l.Command.From.Model.SourceField)
+		source := l.Command.New.ValJson(et.Json{}, sourceField)
+		source.Set(key, value)
+		l.Command.New.Set(sourceField, source)
+	}
+
+	if c.TypeColumn == TpColumn {
+		for _, col := range l.Command.Columns {
+			if col == c {
+				return
+			}
+		}
+
+		l.Command.Columns = append(l.Command.Columns, c)
+		l.Command.New.Set(key, value)
+	}
 }
 
 // Add column to command atribs
@@ -112,13 +137,21 @@ func (l *Linq) commandAddAtrib(key string, value interface{}) {
 
 	name := AtribName(key)
 	c := m.DefineAtrib(name, "", tp, _default)
-	l.Command.Atribs = append(l.Command.Atribs, c)
-	l.Command.New.Set(key, value)
+	l.commandAddColumn(c, key, value)
 }
 
 // Consolidate data to command new
 func (l *Linq) consolidate() {
 	command := l.Command
+
+	if command.TypeCommand == Tpnone {
+		return
+	}
+
+	if command.TypeCommand == TpDelete {
+		return
+	}
+
 	from := command.From
 	for k, v := range *l.Command.Data {
 		c := from.Col(k)
@@ -127,7 +160,12 @@ func (l *Linq) consolidate() {
 		} else {
 			l.commandAddColumn(c, k, v)
 		}
+	}
 
+	if command.TypeCommand == TpInsert {
+		for _, c := range from.Model.Columns {
+			l.commandAddColumn(c, c.Name, c.Default)
+		}
 	}
 }
 
@@ -139,6 +177,8 @@ func (m *Model) Insert(data et.Json) *Linq {
 	l.Command.TypeCommand = TpInsert
 	l.Command.Data = &data
 	l.consolidate()
+
+	logs.Debug("sourceField: ", l.Command.New.ToString())
 
 	return l
 }
@@ -179,13 +219,4 @@ func (l *Linq) updateSql() (string, error) {
 // Return sql delete by linq
 func (l *Linq) deleteSql() (string, error) {
 	return l.Db.deleteSql(l)
-}
-
-// Exec method to use in linq
-func (l *Linq) Exec() error {
-	if err := l.buildSql(); err != nil {
-		return err
-	}
-
-	return l.Db.Exec(l.Sql)
 }

@@ -69,8 +69,8 @@ func (d *Database) addSchema(schema *Schema) {
 
 // AddModel add a model to the database
 func (d *Database) InitModel(model *Model) error {
-	if d.Driver == nil {
-		return logs.Errorm("Driver is required")
+	if d.DB == nil {
+		return logs.Errorm("Connected is required")
 	}
 
 	for _, v := range d.Models {
@@ -89,7 +89,7 @@ func (d *Database) InitModel(model *Model) error {
 		return err
 	}
 
-	err = d.Exec(sql)
+	_, err = d.Query(sql)
 	if err != nil {
 		return err
 	}
@@ -174,25 +174,6 @@ func (d *Database) deleteSql(linq *Linq) (string, error) {
 	}
 
 	return d.Driver.DeleteSql(linq)
-}
-
-// Exec execute a sql
-func (d *Database) Exec(sql string, args ...any) error {
-	if d.DB == nil {
-		return logs.Errorm("Connected is required")
-	}
-
-	if len(sql) == 0 {
-		return logs.Errorm("Sql is required")
-	}
-
-	query := SQLParse(sql, args...)
-	_, err := d.DB.Exec(query)
-	if err != nil {
-		return logs.Error(err)
-	}
-
-	return nil
 }
 
 // Query return a list of items

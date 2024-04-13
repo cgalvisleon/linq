@@ -8,18 +8,51 @@ import (
 
 // Return string can you use to select or return sql
 func sqlColumns(l *linq.Linq, cols ...*linq.Lselect) string {
-	var result string
-
 	if len(l.Froms) == 0 {
 		return ""
 	}
 
+	var result string
+	var def string
+
+	appendColumn := func(val string) {
+		result = strs.Append(result, def, ",\n")
+	}
+
 	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
+		m := f.Model
 		if c.TypeColumn == linq.TpDetail {
 			l.GetDetail(c)
 		} else {
-			l.GetColumn(c)
-			result = strs.Append(result, c.As(l), ",\n")
+			s := l.GetColumn(c)
+			switch c.TypeColumn {
+			case linq.TpColumn: // A.NAME
+				def = strs.Format(`%s`, s.As())
+				appendColumn(def)
+			case linq.TpAtrib: // A._DATA#>>'{name}' AS NAME
+				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(m.SourceField), c.Low())
+				def = strs.Format(`%s AS %s`, def, c.Up())
+				appendColumn(def)
+			case linq.TpReference: //jsonb_build_object('_id', A.Key, 'name', '(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)') AS NAME
+				r := c.Reference
+				other := l.NewFrom(r.OtherKey.Model)
+				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))
+				def = strs.Format(`jsonb_build_object('_id', %s, 'name', %s)`, r.ThisKey.As(l), def)
+				def = strs.Format(`%s AS %s`, def, c.Up())
+				appendColumn(def)
+			case linq.TpCaption: //(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1) AS NAME
+				r := c.Reference
+				other := l.NewFrom(r.OtherKey.Model)
+				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))
+				def = strs.Format(`%s AS %s`, def, c.Up())
+				appendColumn(def)
+			case linq.TpSql:
+				def = strs.Format(`(%s)`, c.Sql)
+				def = strs.ReplaceAll(def, []string{"(("}, "(")
+				def = strs.ReplaceAll(def, []string{"))"}, ")")
+				def = strs.Format(`%s AS %s`, def, c.Up())
+				appendColumn(def)
+			}
 		}
 	}
 
@@ -40,14 +73,14 @@ func sqlColumns(l *linq.Linq, cols ...*linq.Lselect) string {
 
 // Return json string  can you use to select or return sql
 func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
+	if len(l.Froms) == 0 {
+		return ""
+	}
+
 	var result string
 	var objects string
 	var def string
 	var n int
-
-	if len(l.Froms) == 0 {
-		return ""
-	}
 
 	appendObjects := func(val string) {
 		objects = strs.Append(objects, val, ",\n")
@@ -74,14 +107,14 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(m.SourceField), c.Low())
 				def = strs.Format(`'%s', %s`, c.Low(), def)
 				appendObjects(def)
-			case linq.TpReference: //jsonb_build_object('_id', A.Key, 'name', '(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)')
+			case linq.TpReference: //'name', jsonb_build_object('_id', A.Key, 'name', '(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)')
 				r := c.Reference
 				other := l.NewFrom(r.OtherKey.Model)
 				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))
 				def = strs.Format(`jsonb_build_object('_id', %s, 'name', %s)`, r.ThisKey.As(l), def)
 				def = strs.Format(`'%s', %s`, r.Low(), def)
 				appendObjects(def)
-			case linq.TpCaption: //(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)
+			case linq.TpCaption: //'name', (SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)
 				r := c.Reference
 				other := l.NewFrom(r.OtherKey.Model)
 				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))

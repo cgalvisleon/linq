@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 	"github.com/cgalvisleon/linq/linq"
 )
@@ -12,7 +13,22 @@ func sqlCurrent(l *linq.Linq) {
 
 // Add sql insert to sql
 func sqlInsert(l *linq.Linq) {
+	var result string
+	var fields string
+	var values string
+	com := l.Command
 
+	for k, v := range *com.New {
+		field := strs.Uppcase(k)
+		value := et.Unquote(v)
+
+		fields = strs.Append(fields, field, ", ")
+		values = strs.Append(values, strs.Format(`%v`, value), ", ")
+	}
+
+	result = strs.Format("INSERT INTO %s(%s)\nVALUES (%s)", com.From.Model.Table, fields, values)
+
+	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
 // Add return to sql

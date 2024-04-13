@@ -64,6 +64,7 @@ type Linq struct {
 	Command   *Lcommand
 	TypeQuery TypeQuery
 	Sql       string
+	Result    interface{}
 	ItIsBuilt bool
 	debug     bool
 }
