@@ -107,37 +107,30 @@ func (l *Lfrom) C(name string) *Column {
 // From method new linq
 func From(model *Model) *Linq {
 	result := &Linq{
-		Froms:   []*Lfrom{},
-		Columns: NewColumns(),
-		Selects: NewColumns(),
-		Data:    NewColumns(),
-		Returns: NewColumns(),
-		Details: NewColumns(),
-		Wheres:  []*Lwhere{},
-		Groups:  []*Lgroup{},
-		Orders:  []*Lorder{},
-		Joins:   []*Ljoin{},
-		Limit:   0,
-		Offset:  0,
-		Command: &Lcommand{
-			From:        &Lfrom{},
-			TypeCommand: Tpnone,
-			Data:        &et.Json{},
-			New:         &et.Json{},
-			Update:      &et.Json{},
-		},
+		Froms:     []*Lfrom{},
+		Columns:   []*Lselect{},
+		Selects:   NewColumns(),
+		Data:      NewColumns(),
+		Returns:   NewColumns(),
+		Details:   NewColumns(),
+		Wheres:    []*Lwhere{},
+		Groups:    []*Lgroup{},
+		Orders:    []*Lorder{},
+		Joins:     []*Ljoin{},
+		Limit:     0,
+		Offset:    0,
 		TypeQuery: TpSelect,
 		Sql:       "",
 	}
 
 	as := getAs(result)
-	if model.UseSource {
-		result.Data.Used = true
-	} else {
-		result.Selects.Used = true
-	}
 	result.Db = model.Db
-	result.Froms = append(result.Froms, &Lfrom{Linq: result, Model: model, AS: as})
+	form := &Lfrom{Linq: result, Model: model, AS: as}
+	result.Froms = append(result.Froms, form)
+	result.Command = newCommand(form, Tpnone)
+	if !result.ItIsBuilt && model.ItIsBuilt {
+		result.ItIsBuilt = true
+	}
 
 	return result
 }

@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"database/sql"
+
 	"github.com/cgalvisleon/et/et"
 )
 
@@ -32,12 +34,8 @@ func (d TypeDriver) String() string {
 
 type Driver interface {
 	Type() string
-	Connect(params et.Json) error
-	Disconnect() error
+	Connect(params et.Json) (*sql.DB, error)
 	DDLModel(model *Model) (string, error)
-	Exec(sql string, args ...any) error
-	Query(sql string, args ...any) (et.Items, error)
-	QueryOne(sql string, args ...any) (et.Item, error)
 	SelectSql(linq *Linq) (string, error)
 	InsertSql(linq *Linq) (string, error)
 	UpdateSql(linq *Linq) (string, error)

@@ -2,8 +2,6 @@ package linq
 
 import (
 	"strings"
-
-	"github.com/cgalvisleon/et/et"
 )
 
 func (l *Linq) GetRetun(model *Model, name string) *Lselect {
@@ -25,7 +23,7 @@ func (l *Linq) GetRetun(model *Model, name string) *Lselect {
 	return result
 }
 
-func (l *Linq) REturns(sel ...any) (et.Item, error) {
+func (l *Linq) REturns(sel ...any) *Linq {
 	l.Returns.Used = true
 
 	for _, col := range sel {
@@ -49,5 +47,5 @@ func (l *Linq) REturns(sel ...any) (et.Item, error) {
 		}
 	}
 
-	return l.QueryOne()
+	return l
 }

@@ -79,6 +79,7 @@ type Model struct {
 	AfterDelete     []Trigger
 	OnListener      Listener
 	Integrity       bool
+	ItIsBuilt       bool
 	DDL             string
 	Version         int
 }
@@ -117,7 +118,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 func (m *Model) Definition() et.Json {
 	var columns []et.Json = []et.Json{}
 	for _, v := range m.Columns {
-		columns = append(columns, v.Describe())
+		columns = append(columns, v.Definition())
 	}
 
 	var index []et.Json = []et.Json{}

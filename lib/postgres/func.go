@@ -53,7 +53,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 		objects = strs.Append(objects, val, ",\n")
 		n++
 		if n >= 20 {
-			def = strs.Format("jsonb_build_object(\n%s)", objects)
+			def = strs.Format("jsonb_build_object(%s)", objects)
 			result = strs.Append(result, def, "||")
 			objects = ""
 			n = 0
@@ -102,7 +102,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 			appendColumns(f, c)
 		}
 		if n > 0 {
-			def = strs.Format("jsonb_build_object(\n%s)", objects)
+			def = strs.Format("jsonb_build_object(%s)", objects)
 			result = strs.Append(result, def, "||")
 		}
 
@@ -113,7 +113,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 		appendColumns(c.From, c.Column)
 	}
 	if n > 0 {
-		def = strs.Format("jsonb_build_object(\n%s)", objects)
+		def = strs.Format("jsonb_build_object(%s)", objects)
 		result = strs.Append(result, def, "||")
 	}
 	f := l.Froms[0]
@@ -201,6 +201,7 @@ func sqlGroupBy(l *linq.Linq) {
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
+// Add having to sql
 func sqlHaving(l *linq.Linq) {
 	var result string
 	for i, v := range l.Havings {
@@ -244,6 +245,7 @@ func sqlLimit(l *linq.Linq) {
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }
 
+// Add offset to sql
 func sqlOffset(l *linq.Linq) {
 	if l.TypeQuery != linq.TpPage {
 		return
@@ -253,24 +255,6 @@ func sqlOffset(l *linq.Linq) {
 	if l.Limit > 0 {
 		result = strs.Format(`LIMIT %d OFFSET %d`, l.Limit, l.Offset)
 	}
-
-	l.Sql = strs.Append(l.Sql, result, "\n")
-}
-
-func sqlReturns(l *linq.Linq) {
-	if !l.Returns.Used {
-		return
-	}
-
-	var def, result string
-	f := l.Froms[0]
-	m := f.Model
-	if m.UseSource {
-		def = sqlData(l, l.Returns.Columns...)
-	} else {
-		def = sqlColumns(l, l.Returns.Columns...)
-	}
-	result = strs.Format(`RETURNING %s`, def)
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }

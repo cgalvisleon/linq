@@ -7,7 +7,8 @@ import (
 
 // DefineColumn define a column in the model
 func (m *Model) DefineColum(name, description string, typeData TypeData, _default any) *Column {
-	return newColumn(m, strs.Uppcase(name), description, TpColumn, typeData, _default)
+	name = ColName(name)
+	return newColumn(m, name, description, TpColumn, typeData, _default)
 }
 
 // DefineAtrib define a atrib in the model
@@ -17,7 +18,8 @@ func (m *Model) DefineAtrib(name, description string, typeData TypeData, _defaul
 		source = m.DefineColum(m.SourceField, "Source field", TpJson, "{}")
 	}
 
-	result := newColumn(m, strs.Lowcase(name), description, TpAtrib, typeData, _default)
+	name = AtribName(name)
+	result := newColumn(m, name, description, TpAtrib, typeData, _default)
 	result.Main = source
 	source.Atribs = append(source.Atribs, result)
 

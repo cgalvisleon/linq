@@ -37,19 +37,52 @@ func (d TypeQuery) String() string {
 	return ""
 }
 
-// Select query
-func (l *Linq) Query() (et.Items, error) {
+// Return sql select by linq
+func (l *Linq) selectSql() (string, error) {
+	return l.Db.selectSql(l)
+}
+
+func (l *Linq) buildSql() error {
 	var err error
-	l.Sql, err = l.selectSql()
-	if err != nil {
-		return et.Items{}, err
+	switch l.Command.TypeCommand {
+	case TpInsert:
+		l.Sql, err = l.insertSql()
+		if err != nil {
+			return err
+		}
+	case TpUpdate:
+		l.Sql, err = l.updateSql()
+		if err != nil {
+			return err
+		}
+	case TpDelete:
+		l.Sql, err = l.deleteSql()
+		if err != nil {
+			return err
+		}
+	default:
+		l.Sql, err = l.selectSql()
+		if err != nil {
+			return err
+		}
 	}
 
 	if l.debug {
 		logs.Debug(l.Definition().ToString())
 		logs.Debug(l.Sql)
+	}
 
-		return et.Items{}, nil
+	if !l.ItIsBuilt {
+		return logs.Alertm("Linq not built")
+	}
+
+	return nil
+}
+
+// Select query
+func (l *Linq) Query() (et.Items, error) {
+	if err := l.buildSql(); err != nil {
+		return et.Items{}, err
 	}
 
 	result, err := l.Db.Query(l.Sql)
@@ -66,17 +99,8 @@ func (l *Linq) Query() (et.Items, error) {
 
 // Execute query and return item
 func (l *Linq) QueryOne() (et.Item, error) {
-	var err error
-	l.Sql, err = l.selectSql()
-	if err != nil {
+	if err := l.buildSql(); err != nil {
 		return et.Item{}, err
-	}
-
-	if l.debug {
-		logs.Debug(l.Definition().ToString())
-		logs.Debug(l.Sql)
-
-		return et.Item{}, nil
 	}
 
 	result, err := l.Db.QueryOne(l.Sql)

@@ -2,7 +2,6 @@ package linq
 
 import (
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -47,7 +46,7 @@ type Linq struct {
 	Db        *Database
 	as        int
 	Froms     []*Lfrom
-	Columns   *Lcolumns
+	Columns   []*Lselect
 	Selects   *Lcolumns
 	Data      *Lcolumns
 	Returns   *Lcolumns
@@ -65,6 +64,7 @@ type Linq struct {
 	Command   *Lcommand
 	TypeQuery TypeQuery
 	Sql       string
+	ItIsBuilt bool
 	debug     bool
 }
 
@@ -72,6 +72,11 @@ func (l *Linq) Definition() *et.Json {
 	var froms []et.Json = []et.Json{}
 	for _, f := range l.Froms {
 		froms = append(froms, f.Definition())
+	}
+
+	var columns []et.Json = []et.Json{}
+	for _, c := range l.Columns {
+		columns = append(columns, c.Definition())
 	}
 
 	var wheres []et.Json = []et.Json{}
@@ -82,6 +87,11 @@ func (l *Linq) Definition() *et.Json {
 	var groups []et.Json = []et.Json{}
 	for _, g := range l.Groups {
 		groups = append(groups, g.Definition())
+	}
+
+	var havings []et.Json = []et.Json{}
+	for _, h := range l.Havings {
+		havings = append(havings, h.Definition())
 	}
 
 	var orders []et.Json = []et.Json{}
@@ -102,7 +112,7 @@ func (l *Linq) Definition() *et.Json {
 	return &et.Json{
 		"as":        l.as,
 		"froms":     froms,
-		"columns":   l.Columns.Definition(),
+		"columns":   columns,
 		"selects":   l.Selects.Definition(),
 		"data":      l.Data.Definition(),
 		"returns":   l.Returns.Definition(),
@@ -110,6 +120,7 @@ func (l *Linq) Definition() *et.Json {
 		"distinct":  l.Distinct,
 		"wheres":    wheres,
 		"groups":    groups,
+		"havings":   havings,
 		"orders":    orders,
 		"joins":     joins,
 		"unions":    unions,
@@ -126,54 +137,4 @@ func (l *Linq) Debug() *Linq {
 	l.debug = true
 
 	return l
-}
-
-// Return sql select by linq
-func (l *Linq) selectSql() (string, error) {
-	return l.Db.selectSql(l)
-}
-
-// Return sql insert by linq
-func (l *Linq) insertSql() (string, error) {
-	return l.Db.insertSql(l)
-}
-
-// Return sql update by linq
-func (l *Linq) updateSql() (string, error) {
-	return l.Db.updateSql(l)
-}
-
-// Return sql delete by linq
-func (l *Linq) deleteSql() (string, error) {
-	return l.Db.deleteSql(l)
-}
-
-// Generate SQL to linq
-func (l *Linq) execSql() (string, error) {
-	var err error
-	switch l.Command.TypeCommand {
-	case TpInsert:
-		l.Sql, err = l.insertSql()
-		if err != nil {
-			return "", err
-		}
-
-		return l.Sql, nil
-	case TpUpdate:
-		l.Sql, err = l.updateSql()
-		if err != nil {
-			return "", err
-		}
-
-		return l.Sql, nil
-	case TpDelete:
-		l.Sql, err = l.deleteSql()
-		if err != nil {
-			return "", err
-		}
-
-		return l.Sql, nil
-	default:
-		return l.Sql, logs.Errorm("Command not found")
-	}
 }

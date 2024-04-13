@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"database/sql"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
@@ -10,7 +12,9 @@ import (
 type Database struct {
 	Name        string
 	Description string
+	DB          *sql.DB
 	Driver      Driver
+	SourceField string
 	Schemes     []*Schema
 	Models      []*Model
 }
@@ -21,6 +25,7 @@ func NewDatabase(name, description string, drive Driver) *Database {
 		Name:        strs.Lowcase(name),
 		Description: description,
 		Driver:      drive,
+		SourceField: "_DATA",
 		Schemes:     []*Schema{},
 		Models:      []*Model{},
 	}
@@ -43,6 +48,7 @@ func (d *Database) Definition() et.Json {
 		"name":        d.Name,
 		"description": d.Description,
 		"typeDriver":  d.Driver.Type(),
+		"sourceField": d.SourceField,
 		"schemes":     schemes,
 		"models":      models,
 	}
@@ -57,6 +63,7 @@ func (d *Database) addSchema(schema *Schema) {
 	}
 
 	schema.Db = d
+	schema.SourceField = d.SourceField
 	d.Schemes = append(d.Schemes, schema)
 }
 
@@ -73,6 +80,7 @@ func (d *Database) InitModel(model *Model) error {
 	}
 
 	model.Db = d
+	model.SourceField = d.SourceField
 	d.addSchema(model.Schema)
 	d.Models = append(d.Models, model)
 
@@ -81,7 +89,7 @@ func (d *Database) InitModel(model *Model) error {
 		return err
 	}
 
-	err = d.Driver.Exec(sql)
+	err = d.Exec(sql)
 	if err != nil {
 		return err
 	}
@@ -105,16 +113,22 @@ func (d *Database) Connected(params et.Json) error {
 		return logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.Connect(params)
+	var err error
+	d.DB, err = d.Driver.Connect(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Disconnected to database
 func (d *Database) Disconnected() error {
-	if d.Driver == nil {
-		return logs.Errorm("Driver is required")
+	if d.DB != nil {
+		return d.DB.Close()
 	}
 
-	return d.Driver.Disconnect()
+	return nil
 }
 
 // DDLModel return the ddl to create a model
@@ -124,45 +138,6 @@ func (d *Database) ddlModel(model *Model) (string, error) {
 	}
 
 	return d.Driver.DDLModel(model)
-}
-
-// Exec execute a sql
-func (d *Database) Exec(sql string, args ...any) error {
-	if d.Driver == nil {
-		return logs.Errorm("Driver is required")
-	}
-
-	if len(sql) == 0 {
-		return logs.Errorm("Sql is required")
-	}
-
-	return d.Driver.Exec(sql, args...)
-}
-
-// Query return a list of items
-func (d *Database) Query(sql string, args ...any) (et.Items, error) {
-	if d.Driver == nil {
-		return et.Items{}, logs.Errorm("Driver is required")
-	}
-
-	if len(sql) == 0 {
-		return et.Items{}, logs.Errorm("Sql is required")
-	}
-
-	return d.Driver.Query(sql, args...)
-}
-
-// QueryOne return a item
-func (d *Database) QueryOne(sql string, args ...any) (et.Item, error) {
-	if d.Driver == nil {
-		return et.Item{}, logs.Errorm("Driver is required")
-	}
-
-	if len(sql) == 0 {
-		return et.Item{}, logs.Errorm("Sql is required")
-	}
-
-	return d.Driver.QueryOne(sql, args...)
 }
 
 // SelectSql return the sql to select
@@ -199,4 +174,86 @@ func (d *Database) deleteSql(linq *Linq) (string, error) {
 	}
 
 	return d.Driver.DeleteSql(linq)
+}
+
+// Exec execute a sql
+func (d *Database) Exec(sql string, args ...any) error {
+	if d.DB == nil {
+		return logs.Errorm("Connected is required")
+	}
+
+	if len(sql) == 0 {
+		return logs.Errorm("Sql is required")
+	}
+
+	query := SQLParse(sql, args...)
+	_, err := d.DB.Exec(query)
+	if err != nil {
+		return logs.Error(err)
+	}
+
+	return nil
+}
+
+// Query return a list of items
+func (d *Database) Query(sql string, args ...any) (et.Items, error) {
+	if d.DB == nil {
+		return et.Items{}, logs.Errorm("Connected is required")
+	}
+
+	if len(sql) == 0 {
+		return et.Items{}, logs.Errorm("Sql is required")
+	}
+
+	query := SQLParse(sql, args...)
+	rows, err := d.DB.Query(query)
+	if err != nil {
+		return et.Items{}, logs.Error(err)
+	}
+	defer rows.Close()
+
+	result := RowsItems(rows)
+
+	return result, nil
+}
+
+// QueryOne return a item
+func (d *Database) QueryOne(sql string, args ...any) (et.Item, error) {
+	items, err := d.Query(sql, args...)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if items.Count == 0 {
+		return et.Item{
+			Ok:     false,
+			Result: et.Json{},
+		}, nil
+	}
+
+	return et.Item{
+		Ok:     items.Ok,
+		Result: items.Result[0],
+	}, nil
+}
+
+func (d *Database) QueryData(sql string, args ...any) (et.Items, error) {
+	if d.DB == nil {
+		return et.Items{}, logs.Errorm("Connected is required")
+	}
+
+	if len(sql) == 0 {
+		return et.Items{}, logs.Errorm("Sql is required")
+	}
+
+	query := SQLParse(sql, args...)
+	rows, err := d.DB.Query(query)
+	if err != nil {
+		return et.Items{}, logs.Error(err)
+	}
+	defer rows.Close()
+
+	result := DataItems(rows, d.SourceField)
+
+	return result, nil
 }

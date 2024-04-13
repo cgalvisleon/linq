@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"regexp"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
@@ -108,6 +110,20 @@ type Column struct {
 	Validation  Validation
 }
 
+// ColName return a name of column
+func ColName(name string) string {
+	re := regexp.MustCompile("[^a-zA-Z0-9_-]+")
+	s := re.ReplaceAllString(name, "")
+
+	return strs.Uppcase(s)
+}
+
+func AtribName(name string) string {
+	name = ColName(name)
+
+	return strs.Lowcase(name)
+}
+
 // IndexColumn return index of column in model
 func IndexColumn(model *Model, name string) int {
 	result := -1
@@ -182,7 +198,7 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 }
 
 // describe carapteristics of column
-func (c *Column) describe() et.Json {
+func (c *Column) definition() et.Json {
 	return et.Json{
 		"name":        c.Name,
 		"description": c.Description,
@@ -199,10 +215,10 @@ func (c *Column) describe() et.Json {
 }
 
 // Describe carapteristics of column
-func (c *Column) Describe() et.Json {
+func (c *Column) Definition() et.Json {
 	var atribs []et.Json = []et.Json{}
 	for _, atrib := range c.Atribs {
-		atribs = append(atribs, atrib.describe())
+		atribs = append(atribs, atrib.definition())
 	}
 
 	return et.Json{

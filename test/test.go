@@ -38,19 +38,26 @@ func main() {
 
 	A := User
 	B := Modelo
-	_, err := linq.From(A).
+	_ = linq.From(A).
 		Join(A, B, A.C("_id").Eq(B.C("user_id"))).
 		Where(A.C("username").Eq("test")).
 		And(A.C("password").Eq("test")).
 		GroupBy(A.C("username"), A.C("password")).
 		OrderBy(A.C("username")).
 		Desc(A.C("password")).
-		Debug().
+		Select().
+		Debug()
 		// First().
-		Page(1, 10)
-	if err != nil {
-		logs.Error(err)
-	}
+		// Page(1, 10)
+
+	_, _ = A.
+		Insert(et.Json{
+			"username": "test",
+			"password": "test",
+		}).
+		REturns().
+		Debug().
+		QueryOne()
 
 	// logs.Debug(A.Definition().ToString())
 	// logs.Debug(B.Definition().ToString())

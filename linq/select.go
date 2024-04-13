@@ -107,7 +107,7 @@ func (l *Linq) GetDetail(column *Column) *Lselect {
 
 // Add column to columns
 func (l *Linq) GetColumn(column *Column) *Lselect {
-	for _, v := range l.Columns.Columns {
+	for _, v := range l.Columns {
 		if v.Column == column {
 			return v
 		}
@@ -121,8 +121,7 @@ func (l *Linq) GetColumn(column *Column) *Lselect {
 		result = &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
 	}
 
-	l.Columns.Columns = append(l.Columns.Columns, result)
-	l.Columns.Used = len(l.Columns.Columns) > 0
+	l.Columns = append(l.Columns, result)
 
 	return result
 }
