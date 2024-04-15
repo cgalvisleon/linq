@@ -42,91 +42,107 @@ func (l *Linq) selectSql() (string, error) {
 	return l.Db.selectSql(l)
 }
 
-func (l *Linq) buildSql() error {
-	var err error
-	switch l.Command.TypeCommand {
-	case TpInsert:
-		l.Sql, err = l.insertSql()
-		if err != nil {
-			return err
-		}
-	case TpUpdate:
-		l.Sql, err = l.updateSql()
-		if err != nil {
-			return err
-		}
-	case TpDelete:
-		l.Sql, err = l.deleteSql()
-		if err != nil {
-			return err
-		}
-	default:
-		l.Sql, err = l.selectSql()
-		if err != nil {
-			return err
-		}
+// Return sql command by linq
+func (l *Linq) query(sql string, args ...any) (et.Items, error) {
+	if l.Db.DB == nil {
+		return et.Items{}, logs.Errorm("Connected is required")
+	}
+
+	if len(sql) == 0 {
+		return et.Items{}, logs.Errorm("Sql is required")
 	}
 
 	if l.debug {
 		logs.Debug(l.Definition().ToString())
-		logs.Debug(l.Sql)
+		logs.Debug(sql)
 	}
 
 	if !l.ItIsBuilt {
-		return logs.Alertm("Linq not built")
+		return et.Items{}, logs.Alertm("Linq not built")
 	}
 
-	return nil
+	query := SQLParse(sql, args...)
+	rows, err := l.Db.DB.Query(query)
+	if err != nil {
+		return et.Items{}, logs.Error(err)
+	}
+	defer rows.Close()
+
+	var result et.Items
+	for rows.Next() {
+		var item et.Item
+		item.Scan(rows)
+		for _, col := range l.Details.Columns {
+			col.FuncDetail(&item.Result)
+		}
+
+		result.Result = append(result.Result, item.Result)
+		result.Ok = true
+		result.Count++
+	}
+
+	return result, nil
 }
 
 // Exec method to use in linq
-func (l *Linq) Exec() error {
-	if err := l.buildSql(); err != nil {
-		return err
+func (l *Linq) Exec() (et.Items, error) {
+	if l.TypeQuery != TpCommand {
+		return et.Items{}, logs.Alertm("The query is not a command")
 	}
 
-	err := l.funcBefore()
+	c := l.Command
+	switch c.TypeCommand {
+	case TpInsert:
+		err := c.funcInsert()
+		if err != nil {
+			return et.Items{}, err
+		}
+	case TpUpdate:
+		err := c.funcUpdate()
+		if err != nil {
+			return et.Items{}, err
+		}
+	case TpDelete:
+		err := c.funcDelete()
+		if err != nil {
+			return et.Items{}, err
+		}
+	}
+
+	return *l.Result, nil
+}
+
+// ExecOne method to use in linq
+func (l *Linq) ExecOne() (et.Item, error) {
+	items, err := l.Exec()
 	if err != nil {
-		return err
+		return et.Item{}, err
 	}
 
-	result, err := l.Db.Query(l.Sql)
-	if err != nil {
-		return err
+	if !items.Ok {
+		return et.Item{}, nil
 	}
 
-	l.Result = result
-
-	err = l.funcAfter()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return et.Item{
+		Ok:     items.Ok,
+		Result: items.Result[0],
+	}, nil
 }
 
 // Select query
 func (l *Linq) Query() (et.Items, error) {
-	if err := l.buildSql(); err != nil {
-		return et.Items{}, err
-	}
-
-	err := l.funcBefore()
+	var err error
+	l.Sql, err = l.selectSql()
 	if err != nil {
 		return et.Items{}, err
 	}
 
-	result, err := l.Db.Query(l.Sql)
+	result, err := l.query(l.Sql)
 	if err != nil {
 		return et.Items{}, err
 	}
 
-	l.Result = result
-
-	err = l.funcAfter()
-	if err != nil {
-		return et.Items{}, err
-	}
+	l.Result = &result
 
 	return result, nil
 }

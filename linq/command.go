@@ -37,7 +37,6 @@ type Lcommand struct {
 	Linq        *Linq
 	From        *Lfrom
 	TypeCommand TypeCommand
-	Current     []et.Json
 	Data        *et.Json
 	Old         *et.Json
 	New         *et.Json
@@ -59,7 +58,6 @@ func newCommand(from *Lfrom, tp TypeCommand) *Lcommand {
 	return &Lcommand{
 		From:        from,
 		TypeCommand: tp,
-		Current:     []et.Json{},
 		Data:        &et.Json{},
 		Old:         &et.Json{},
 		New:         &et.Json{},
@@ -112,15 +110,23 @@ func (c *Lcommand) commandColumn(key string, value interface{}) {
 		}
 	}
 
+	setNew := func() {
+		if c.New == nil {
+			c.New = &et.Json{}
+		}
+
+		c.New.Set(key, value)
+	}
+
 	if col.TypeColumn == TpAtrib {
 		c.Linq.GetAtrib(col)
-		c.Linq.Command.New.Set(key, value)
+		setNew()
 		return
 	}
 
 	if col.TypeColumn == TpColumn {
 		c.Linq.GetColumn(col)
-		c.Linq.Command.New.Set(key, value)
+		setNew()
 		return
 	}
 }
@@ -135,12 +141,12 @@ func (c *Lcommand) consolidate() {
 		return
 	}
 
-	from := c.From
 	for k, v := range *c.Data {
 		c.commandColumn(k, v)
 	}
 
 	if c.TypeCommand == TpInsert {
+		from := c.From
 		for _, col := range from.Model.Columns {
 			c.commandColumn(col.Name, col.Default.Value())
 		}
@@ -180,6 +186,11 @@ func (m *Model) Delete() *Linq {
 	l.Command.consolidate()
 
 	return l
+}
+
+// Return sql current by linq
+func (l *Linq) currentSql() (string, error) {
+	return l.Db.currentSql(l)
 }
 
 // Return sql insert by linq

@@ -149,6 +149,15 @@ func (d *Database) selectSql(linq *Linq) (string, error) {
 	return d.Driver.SelectSql(linq)
 }
 
+// CurrentSql return the sql to current
+func (d *Database) currentSql(linq *Linq) (string, error) {
+	if d.Driver == nil {
+		return "", logs.Errorm("Driver is required")
+	}
+
+	return d.Driver.CurrentSql(linq)
+}
+
 // InsertSql return the sql to insert
 func (d *Database) insertSql(linq *Linq) (string, error) {
 	if d.Driver == nil {

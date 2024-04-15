@@ -122,6 +122,7 @@ func From(model *Model) *Linq {
 		Offset:    0,
 		TypeQuery: TpSelect,
 		Sql:       "",
+		Result:    &et.Items{},
 	}
 
 	as := getAs(result)
