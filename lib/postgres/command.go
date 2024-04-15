@@ -28,16 +28,14 @@ func sqlReturns(l *linq.Linq) {
 // Build current sql used to trigger in linq
 func sqlCurrent(l *linq.Linq) {
 	var result string
-	com := l.Command
-	f := com.From
-
-	if l.Distinct {
-		def := strs.Format(`SELECT DISTINCT %s.*`, f.AS)
-		result = strs.Append(result, def, "")
+	if l.Command.From.Model.UseSource {
+		def := sqlData(l, []*linq.Lselect{}...)
+		result = strs.Append(result, def, ",\n")
 	} else {
-		def := strs.Format(`SELECT %s.*`, f.AS)
-		result = strs.Append(result, def, "")
+		result = sqlColumns(l, []*linq.Lselect{}...)
 	}
+
+	result = strs.Append("SELECT", result, " ")
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }

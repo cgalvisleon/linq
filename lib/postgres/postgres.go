@@ -53,18 +53,6 @@ func (d *Postgres) DDLModel(model *linq.Model) (string, error) {
 	return "", nil
 }
 
-func (d *Postgres) CurrentSql(l *linq.Linq) (string, error) {
-	sqlCurrent(l)
-
-	sqlFrom(l)
-
-	sqlWhere(l)
-
-	sqlLimit(l)
-
-	return l.Sql, nil
-}
-
 // SelectSql return the sql to select
 func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
 	sqlSelect(l)
@@ -84,6 +72,19 @@ func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
 	sqlLimit(l)
 
 	sqlOffset(l)
+
+	return l.Sql, nil
+}
+
+// CurrentSql return the sql to get the current
+func (d *Postgres) CurrentSql(l *linq.Linq) (string, error) {
+	sqlCurrent(l)
+
+	sqlFrom(l)
+
+	sqlWhere(l)
+
+	sqlLimit(l)
 
 	return l.Sql, nil
 }
