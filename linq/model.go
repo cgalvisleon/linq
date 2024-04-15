@@ -108,7 +108,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		IdTField:        schema.IdTField,
 	}
 
-	_idT := result.DefineColum(result.IdTField, "_idT of the table", TpKey, "-1")
+	_idT := result.DefineColum(result.IdTField, "_idT of the table", TpUUId, DefUuid)
 	result.AddIndexColumn(_idT, true)
 
 	schema.AddModel(result)

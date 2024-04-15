@@ -104,7 +104,11 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 				def = strs.Format(`'%s', %s`, c.Low(), s.As())
 				appendObjects(def)
 			case linq.TpAtrib: // 'name', A._DATA#>>'{name}'
-				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(m.SourceField), c.Low())
+				if f.Linq.TypeQuery == linq.TpCommand {
+					def = strs.Format(`%s#>>'{%s}'`, strs.Uppcase(m.SourceField), c.Low())
+				} else {
+					def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(m.SourceField), c.Low())
+				}
 				def = strs.Format(`'%s', %s`, c.Low(), def)
 				appendObjects(def)
 			case linq.TpReference: //'name', jsonb_build_object('_id', A.Key, 'name', '(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)')

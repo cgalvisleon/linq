@@ -1,21 +1,20 @@
 package linq
 
 import (
-	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
 
 // DefineColumn define a column in the model
-func (m *Model) DefineColum(name, description string, typeData TypeData, _default any) *Column {
+func (m *Model) DefineColum(name, description string, typeData TypeData, _default DefValue) *Column {
 	name = ColName(name)
 	return newColumn(m, name, description, TpColumn, typeData, _default)
 }
 
 // DefineAtrib define a atrib in the model
-func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default any) *Column {
+func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default DefValue) *Column {
 	source := COlumn(m, m.SourceField)
 	if source == nil {
-		source = m.DefineColum(m.SourceField, "Source field", TpJson, "{}")
+		source = m.DefineColum(m.SourceField, "Source field", TpJson, DefJson)
 	}
 
 	name = AtribName(name)
@@ -77,7 +76,7 @@ func (m *Model) DefineForeignKey(name, description string, foreignKey []string, 
 
 // Define reference to object in the model
 func (m *Model) DefineReference(thisKey *Column, name string, otherKey, column *Column, showThisKey bool) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpReference, TpJson, et.Json{"_id": "", "name": ""})
+	result := newColumn(m, strs.Uppcase(name), "", TpReference, TpJson, DefObject)
 	if result == nil {
 		return nil
 	}
@@ -93,7 +92,7 @@ func (m *Model) DefineReference(thisKey *Column, name string, otherKey, column *
 
 // Define caption in the model
 func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Column) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpCaption, TpJson, "")
+	result := newColumn(m, strs.Uppcase(name), "", TpCaption, TpJson, DefString)
 	if result == nil {
 		return nil
 	}
@@ -108,7 +107,7 @@ func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Co
 
 // Define a detail collumn to the model
 func (m *Model) DefineDetail(name, description string, _default any, funcDetail FuncDetail) *Column {
-	result := newColumn(m, name, description, TpDetail, TpAny, _default)
+	result := newColumn(m, name, description, TpDetail, TpAny, DefJson)
 	result.SetHidden(true)
 	result.FuncDetail = funcDetail
 
@@ -119,7 +118,7 @@ func (m *Model) DefineDetail(name, description string, _default any, funcDetail 
 
 // Define a sql column to the model
 func (m *Model) DefineSQL(name, sql string) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpSql, TpAny, "")
+	result := newColumn(m, strs.Uppcase(name), "", TpSql, TpAny, DefString)
 	if result == nil {
 		return nil
 	}

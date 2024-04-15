@@ -109,6 +109,7 @@ func From(model *Model) *Linq {
 	result := &Linq{
 		Froms:     []*Lfrom{},
 		Columns:   []*Lselect{},
+		Atribs:    []*Lselect{},
 		Selects:   NewColumns(),
 		Data:      NewColumns(),
 		Returns:   NewColumns(),
@@ -128,6 +129,7 @@ func From(model *Model) *Linq {
 	form := &Lfrom{Linq: result, Model: model, AS: as}
 	result.Froms = append(result.Froms, form)
 	result.Command = newCommand(form, Tpnone)
+	result.Command.Linq = result
 	if !result.ItIsBuilt && model.ItIsBuilt {
 		result.ItIsBuilt = true
 	}

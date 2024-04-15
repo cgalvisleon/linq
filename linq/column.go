@@ -2,6 +2,7 @@ package linq
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
@@ -41,8 +42,10 @@ func (t TypeColumn) String() string {
 type TypeData int
 
 const (
-	TpKey TypeData = iota
+	TpUUId TypeData = iota
 	TpString
+	TpShortString
+	TpText
 	TpInt
 	TpInt64
 	TpFloat
@@ -57,10 +60,14 @@ const (
 
 func (t TypeData) String() string {
 	switch t {
-	case TpKey:
-		return "key"
+	case TpUUId:
+		return "uuid"
 	case TpString:
 		return "string"
+	case TpShortString:
+		return "shortstring"
+	case TpText:
+		return "text"
 	case TpInt:
 		return "int"
 	case TpInt64:
@@ -83,6 +90,53 @@ func (t TypeData) String() string {
 	return ""
 }
 
+type DefValue int
+
+const (
+	DefString DefValue = iota
+	DefUuid
+	DefInt
+	DefInt64
+	DefFloat
+	DefBool
+	DefNow
+	DefJson
+	DefArray
+	DefObject
+	DefSerie
+	DefNil
+)
+
+func (d DefValue) Value() interface{} {
+	switch d {
+	case DefString:
+		return ""
+	case DefUuid:
+		return "-1"
+	case DefInt:
+		return int(0)
+	case DefInt64:
+		return int64(0)
+	case DefFloat:
+		return float64(0)
+	case DefBool:
+		return false
+	case DefNow:
+		return time.Now()
+	case DefJson:
+		return et.Json{}
+	case DefArray:
+		return []et.Json{}
+	case DefObject:
+		return et.Json{"_id": "-1", "name": ""}
+	case DefSerie:
+		return 0
+	case DefNil:
+		return nil
+	}
+	return ""
+}
+
 // Validation tipe function
 type Validation func(col *Column, value interface{}) bool
 
@@ -92,7 +146,7 @@ type Column struct {
 	Description string
 	TypeColumn  TypeColumn
 	TypeData    TypeData
-	Default     any
+	Default     DefValue
 	Schema      *Schema
 	Model       *Model
 	Atribs      []*Column
@@ -150,7 +204,7 @@ func COlumn(model *Model, name string) *Column {
 }
 
 // NewColumn create a new column
-func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default any) *Column {
+func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default DefValue) *Column {
 	idx := IndexColumn(model, name)
 
 	if idx != -1 {
@@ -210,7 +264,7 @@ func (c *Column) definition() et.Json {
 		"description": c.Description,
 		"type_column": c.TypeColumn.String(),
 		"type_data":   c.TypeData.String(),
-		"default":     c.Default,
+		"default":     c.Default.Value(),
 		"indexed":     c.Indexed,
 		"unique":      c.Unique,
 		"required":    c.Required,

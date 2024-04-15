@@ -1,9 +1,9 @@
 package linq
 
 import (
+	"time"
+
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/logs"
-	"github.com/cgalvisleon/et/strs"
 )
 
 // TypeCommand struct to use in linq
@@ -34,35 +34,23 @@ func (d TypeCommand) String() string {
 
 // Command struct to use in linq
 type Lcommand struct {
+	Linq        *Linq
 	From        *Lfrom
 	TypeCommand TypeCommand
-	Columns     []*Column
-	Atribs      []*Column
+	Current     []et.Json
 	Data        *et.Json
+	Old         *et.Json
 	New         *et.Json
-	Update      *et.Json
 }
 
 // Definition method to use in linq
 func (l *Lcommand) Definition() et.Json {
-	var columns []et.Json = []et.Json{}
-	for _, c := range l.Columns {
-		columns = append(columns, c.Definition())
-	}
-
-	var atribs []et.Json = []et.Json{}
-	for _, a := range l.Atribs {
-		atribs = append(atribs, a.Definition())
-	}
-
 	return et.Json{
 		"from":        l.From.Definition(),
 		"typeCommand": l.TypeCommand.String(),
-		"columns":     columns,
-		"atributes":   atribs,
 		"data":        l.Data,
+		"old":         l.Old,
 		"new":         l.New,
-		"update":      l.Update,
 	}
 }
 
@@ -71,100 +59,90 @@ func newCommand(from *Lfrom, tp TypeCommand) *Lcommand {
 	return &Lcommand{
 		From:        from,
 		TypeCommand: tp,
-		Columns:     []*Column{},
-		Atribs:      []*Column{},
+		Current:     []et.Json{},
 		Data:        &et.Json{},
+		Old:         &et.Json{},
 		New:         &et.Json{},
-		Update:      &et.Json{},
 	}
 }
 
 // Add column to command colums
-func (l *Linq) commandAddColumn(c *Column, key string, value interface{}) {
-	if c.TypeColumn == TpAtrib {
-		for _, col := range l.Command.Atribs {
-			if col == c {
-				return
-			}
-		}
+func (c *Lcommand) commandColumn(key string, value interface{}) {
+	m := c.From.Model
+	col := m.Col(key)
 
-		l.commandAddColumn(c.Model.source, c.Model.SourceField, c.Model.source.Default)
-		l.Command.Atribs = append(l.Command.Atribs, c)
-		sourceField := strs.Lowcase(l.Command.From.Model.SourceField)
-		source := l.Command.New.ValJson(et.Json{}, sourceField)
-		source.Set(key, value)
-		l.Command.New.Set(sourceField, source)
+	if col == nil {
+		if m.UseSource && !m.Integrity {
+			var tp TypeData
+			var _default DefValue
+			switch value.(type) {
+			case int:
+				tp = TpInt
+				_default = DefInt
+			case float64:
+				tp = TpFloat
+				_default = DefFloat
+			case bool:
+				tp = TpBool
+				_default = DefBool
+			case et.Json:
+				tp = TpJson
+				_default = DefJson
+			case *et.Json:
+				tp = TpJson
+				_default = DefJson
+			case []et.Json:
+				tp = TpArray
+				_default = DefArray
+			case []*et.Json:
+				tp = TpArray
+				_default = DefArray
+			case time.Time:
+				tp = TpTimeStamp
+				_default = DefNow
+			default:
+				tp = TpString
+				_default = DefString
+			}
+
+			name := AtribName(key)
+			col = m.DefineAtrib(name, "", tp, _default)
+		} else {
+			return
+		}
 	}
 
-	if c.TypeColumn == TpColumn {
-		for _, col := range l.Command.Columns {
-			if col == c {
-				return
-			}
-		}
-
-		l.Command.Columns = append(l.Command.Columns, c)
-		l.Command.New.Set(key, value)
-	}
-}
-
-// Add column to command atribs
-func (l *Linq) commandAddAtrib(key string, value interface{}) {
-	m := l.Command.From.Model
-	if !m.UseSource {
+	if col.TypeColumn == TpAtrib {
+		c.Linq.GetAtrib(col)
+		c.Linq.Command.New.Set(key, value)
 		return
 	}
-	if m.Integrity {
+
+	if col.TypeColumn == TpColumn {
+		c.Linq.GetColumn(col)
+		c.Linq.Command.New.Set(key, value)
 		return
 	}
-
-	var tp TypeData
-	var _default any
-	switch value.(type) {
-	case int:
-		tp = TpInt
-		_default = 0
-	case float64:
-		tp = TpFloat
-		_default = 0.0
-	case bool:
-		tp = TpBool
-		_default = false
-	default:
-		tp = TpString
-		_default = ""
-	}
-
-	name := AtribName(key)
-	c := m.DefineAtrib(name, "", tp, _default)
-	l.commandAddColumn(c, key, value)
 }
 
 // Consolidate data to command new
-func (l *Linq) consolidate() {
-	command := l.Command
-
-	if command.TypeCommand == Tpnone {
+func (c *Lcommand) consolidate() {
+	if c.TypeCommand == Tpnone {
 		return
 	}
 
-	if command.TypeCommand == TpDelete {
+	if c.TypeCommand == TpDelete {
 		return
 	}
 
-	from := command.From
-	for k, v := range *l.Command.Data {
-		c := from.Col(k)
-		if c == nil {
-			l.commandAddAtrib(k, v)
-		} else {
-			l.commandAddColumn(c, k, v)
-		}
+	from := c.From
+	for k, v := range *c.Data {
+		c.commandColumn(k, v)
 	}
 
-	if command.TypeCommand == TpInsert {
-		for _, c := range from.Model.Columns {
-			l.commandAddColumn(c, c.Name, c.Default)
+	if c.TypeCommand == TpInsert {
+		for _, col := range from.Model.Columns {
+			c.commandColumn(col.Name, col.Default.Value())
 		}
 	}
 }
@@ -176,9 +154,7 @@ func (m *Model) Insert(data et.Json) *Linq {
 	l.Command.From = l.Froms[0]
 	l.Command.TypeCommand = TpInsert
 	l.Command.Data = &data
-	l.consolidate()
-
-	logs.Debug("sourceField: ", l.Command.New.ToString())
+	l.Command.consolidate()
 
 	return l
 }
@@ -190,7 +166,7 @@ func (m *Model) Update(data et.Json) *Linq {
 	l.Command.From = l.Froms[0]
 	l.Command.TypeCommand = TpUpdate
 	l.Command.Data = &data
-	l.consolidate()
+	l.Command.consolidate()
 
 	return l
 }
@@ -201,7 +177,7 @@ func (m *Model) Delete() *Linq {
 	l.TypeQuery = TpCommand
 	l.Command.From = l.Froms[0]
 	l.Command.TypeCommand = TpDelete
-	l.consolidate()
+	l.Command.consolidate()
 
 	return l
 }

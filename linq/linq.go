@@ -47,6 +47,7 @@ type Linq struct {
 	as        int
 	Froms     []*Lfrom
 	Columns   []*Lselect
+	Atribs    []*Lselect
 	Selects   *Lcolumns
 	Data      *Lcolumns
 	Returns   *Lcolumns
@@ -78,6 +79,11 @@ func (l *Linq) Definition() *et.Json {
 	var columns []et.Json = []et.Json{}
 	for _, c := range l.Columns {
 		columns = append(columns, c.Definition())
+	}
+
+	var atribs []et.Json = []et.Json{}
+	for _, a := range l.Atribs {
+		atribs = append(atribs, a.Definition())
 	}
 
 	var wheres []et.Json = []et.Json{}
@@ -114,6 +120,7 @@ func (l *Linq) Definition() *et.Json {
 		"as":        l.as,
 		"froms":     froms,
 		"columns":   columns,
+		"atribs":    atribs,
 		"selects":   l.Selects.Definition(),
 		"data":      l.Data.Definition(),
 		"returns":   l.Returns.Definition(),

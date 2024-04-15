@@ -53,14 +53,14 @@ func (d *Postgres) DDLModel(model *linq.Model) (string, error) {
 	return "", nil
 }
 
-// CountSql return the sql to count
-func (d *Postgres) CountSql(l *linq.Linq) (string, error) {
-	if len(l.Froms) == 0 {
-		return "", logs.Errorm("From is required")
-	}
+func (d *Postgres) CurrentSql(l *linq.Linq) (string, error) {
+	sqlCurrent(l)
 
-	table := l.Froms[0].Model.Table
-	l.Sql = strs.Format(`SELECT COUNT(*) FROM %s`, table)
+	sqlFrom(l)
+
+	sqlWhere(l)
+
+	sqlLimit(l)
 
 	return l.Sql, nil
 }
@@ -99,12 +99,18 @@ func (d *Postgres) InsertSql(l *linq.Linq) (string, error) {
 
 // UpdateSql return the sql to update
 func (d *Postgres) UpdateSql(l *linq.Linq) (string, error) {
+	sqlUpdate(l)
+
+	sqlReturns(l)
 
 	return l.Sql, nil
 }
 
 // DeleteSql return the sql to delete
 func (d *Postgres) DeleteSql(l *linq.Linq) (string, error) {
+	sqlDelete(l)
+
+	sqlReturns(l)
 
 	return l.Sql, nil
 }

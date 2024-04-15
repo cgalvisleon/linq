@@ -49,6 +49,7 @@ func (l *Lselect) Definition() et.Json {
 	return et.Json{
 		"form":         l.From.Definition(),
 		"column":       l.Column.Name,
+		"type":         l.Column.TypeColumn.String(),
 		"as":           l.AS,
 		"typeFunction": l.TypeFunction.String(),
 	}
@@ -63,6 +64,28 @@ func (l *Lselect) SetAs(name string) *Lselect {
 
 // As method to use set as name to column in linq
 func (l *Lselect) As() string {
+	if l.Linq.TypeQuery == TpCommand {
+		switch l.TypeFunction {
+		case TpCount:
+			def := strs.Format(`%s`, l.AS)
+			return strs.Format(`COUNT(%s)`, def)
+		case TpSum:
+			def := strs.Format(`%s`, l.AS)
+			return strs.Format(`SUM(%s)`, def)
+		case TpAvg:
+			def := strs.Format(`%s`, l.AS)
+			return strs.Format(`AVG(%s)`, def)
+		case TpMax:
+			def := strs.Format(`%s`, l.AS)
+			return strs.Format(`MAX(%s)`, def)
+		case TpMin:
+			def := strs.Format(`%s`, l.AS)
+			return strs.Format(`MIN(%s)`, def)
+		default:
+			return strs.Format(`%s`, l.AS)
+		}
+	}
+
 	switch l.TypeFunction {
 	case TpCount:
 		def := strs.Format(`%s.%s`, l.From.AS, l.AS)
@@ -122,6 +145,22 @@ func (l *Linq) GetColumn(column *Column) *Lselect {
 	}
 
 	l.Columns = append(l.Columns, result)
+
+	return result
+}
+
+func (l *Linq) GetAtrib(column *Column) *Lselect {
+	for _, v := range l.Atribs {
+		if v.Column == column {
+			return v
+		}
+	}
+
+	var result *Lselect
+	l.GetColumn(column.Model.source)
+	lform := l.GetFrom(column.Model)
+	result = &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
+	l.Atribs = append(l.Atribs, result)
 
 	return result
 }
@@ -186,104 +225,6 @@ func (m *Model) Data(sel ...any) *Linq {
 	l := From(m)
 
 	return l.DAta(sel...)
-}
-
-// Select query take n element data
-func (l *Linq) Take(n int) (et.Items, error) {
-	l.Limit = n
-
-	return l.Query()
-}
-
-// Select skip n element data
-func (l *Linq) Skip(n int) (et.Items, error) {
-	l.TypeQuery = TpSkip
-	l.Limit = 1
-	l.Offset = n
-	var err error
-
-	result, err := l.Query()
-	if err != nil {
-		return et.Items{}, err
-	}
-
-	return result, nil
-}
-
-// Select query all data
-func (l *Linq) All() (et.Items, error) {
-	l.Limit = 0
-
-	return l.Query()
-}
-
-// Select query first data
-func (l *Linq) First() (et.Item, error) {
-	items, err := l.Take(1)
-	if err != nil {
-		return et.Item{}, err
-	}
-
-	if !items.Ok {
-		return et.Item{}, nil
-	}
-
-	return et.Item{
-		Ok:     items.Ok,
-		Result: items.Result[0],
-	}, nil
-}
-
-// Select query type last data
-func (l *Linq) Last() (et.Item, error) {
-	l.TypeQuery = TpLast
-	items, err := l.Take(1)
-	if err != nil {
-		return et.Item{}, err
-	}
-
-	if !items.Ok {
-		return et.Item{}, nil
-	}
-
-	return et.Item{
-		Ok:     items.Ok,
-		Result: items.Result[0],
-	}, nil
-}
-
-// Select query type page data
-func (l *Linq) Page(page, rows int) (et.Items, error) {
-	l.TypeQuery = TpPage
-	offset := (page - 1) * rows
-	l.Limit = rows
-	l.Offset = offset
-
-	return l.Query()
-}
-
-// Select query list, include count, page and rows
-func (l *Linq) List(page, rows int) (et.List, error) {
-	l.TypeQuery = TpAll
-	var err error
-	l.Sql, err = l.selectSql()
-	if err != nil {
-		return et.List{}, err
-	}
-
-	item, err := l.QueryOne()
-	if err != nil {
-		return et.List{}, err
-	}
-
-	all := item.Int("count")
-
-	items, err := l.Page(page, rows)
-	if err != nil {
-		return et.List{}, err
-	}
-
-	return items.ToList(all, page, rows), nil
 }
 
 // Select  columns a query
