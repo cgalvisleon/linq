@@ -35,10 +35,10 @@ func (d TypeDriver) String() string {
 type Driver interface {
 	Type() string
 	Connect(params et.Json) (*sql.DB, error)
-	DDLModel(model *Model) (string, error)
-	SelectSql(linq *Linq) (string, error)
-	CurrentSql(linq *Linq) (string, error)
-	InsertSql(linq *Linq) (string, error)
-	UpdateSql(linq *Linq) (string, error)
-	DeleteSql(linq *Linq) (string, error)
+	DDLModel(model *Model) string
+	SelectSql(linq *Linq) string
+	CurrentSql(linq *Linq) string
+	InsertSql(linq *Linq) string
+	UpdateSql(linq *Linq) string
+	DeleteSql(linq *Linq) string
 }

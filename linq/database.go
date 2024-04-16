@@ -89,10 +89,12 @@ func (d *Database) InitModel(model *Model) error {
 		return err
 	}
 
-	_, err = d.Query(sql)
-	if err != nil {
-		return err
-	}
+	logs.Debug(sql)
+
+	// _, err = d.Query(sql)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -137,7 +139,7 @@ func (d *Database) ddlModel(model *Model) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.DDLModel(model)
+	return d.Driver.DDLModel(model), nil
 }
 
 // SelectSql return the sql to select
@@ -146,7 +148,7 @@ func (d *Database) selectSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.SelectSql(linq)
+	return d.Driver.SelectSql(linq), nil
 }
 
 // CurrentSql return the sql to current
@@ -155,7 +157,7 @@ func (d *Database) currentSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.CurrentSql(linq)
+	return d.Driver.CurrentSql(linq), nil
 }
 
 // InsertSql return the sql to insert
@@ -164,7 +166,7 @@ func (d *Database) insertSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.InsertSql(linq)
+	return d.Driver.InsertSql(linq), nil
 }
 
 // UpdateSql return the sql to update
@@ -173,7 +175,7 @@ func (d *Database) updateSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.UpdateSql(linq)
+	return d.Driver.UpdateSql(linq), nil
 }
 
 // DeleteSql return the sql to delete
@@ -182,7 +184,7 @@ func (d *Database) deleteSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.DeleteSql(linq)
+	return d.Driver.DeleteSql(linq), nil
 }
 
 // Query return a list of items

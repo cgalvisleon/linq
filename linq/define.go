@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"strings"
+
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -68,8 +70,18 @@ func (m *Model) DefinePrimaryKey(keys []string) *Model {
 }
 
 // Define foreign key in the model
-func (m *Model) DefineForeignKey(name, description string, foreignKey []string, parentModel *Model, parentKey []string) *Model {
-	m.AddForeignKey(name, description, foreignKey, parentModel, parentKey)
+func (m *Model) DefineForeignKey(foreignKey []string, parentModel *Model, parentKey []string) *Model {
+	for i, key := range foreignKey {
+		foreignKey[i] = strs.Uppcase(key)
+	}
+	for i, key := range parentKey {
+		parentKey[i] = strs.Uppcase(key)
+	}
+	fkey := strs.Replace(m.Table, ".", "_")
+	fkey = strs.Replace(fkey, "-", "_") + "_" + strings.Join(foreignKey, "_") + "_fkey"
+	fkey = strs.Lowcase(fkey)
+	description := strs.Format(`Foreign key to %s(%s)`, parentModel.Table, strings.Join(parentKey, ", "))
+	m.AddForeignKey(fkey, description, foreignKey, parentModel, parentKey)
 
 	return m
 }

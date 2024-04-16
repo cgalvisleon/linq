@@ -48,7 +48,7 @@ func sqlInsert(l *linq.Linq) {
 	com := l.Command
 	m := com.From.Model
 
-	for k, v := range *com.New {
+	for k, v := range *com.Source {
 		field := strs.Uppcase(k)
 		value := et.Unquote(v)
 

@@ -314,6 +314,21 @@ func (c *Column) As(l *Linq) string {
 	return strs.Format(`%s.%s`, f.AS, c.Name)
 }
 
+// Table return table name of column
+func (c *Column) Table() string {
+	return c.Model.Table
+}
+
+// Return name of column in array string
+func (c *Column) PrimaryKeys() []string {
+	var result []string
+	for _, v := range c.Model.PrimaryKeys {
+		result = append(result, v.Name)
+	}
+
+	return result
+}
+
 // IsHidden return if column is hidden
 func (c *Column) IsHidden() bool {
 	return c.hidden

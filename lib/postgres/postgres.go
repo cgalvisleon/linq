@@ -16,6 +16,7 @@ type Postgres struct {
 	Port     int
 	Database string
 	user     string
+	DB       *sql.DB
 }
 
 // Type return the type of the driver
@@ -43,18 +44,24 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 		return nil, err
 	}
 
+	d.DB = result
+
 	logs.Infof("Connected to %s database %s", driver, d.Database)
 
-	return result, nil
+	return d.DB, nil
 }
 
 // DDLModel return the ddl to create the model
-func (d *Postgres) DDLModel(model *linq.Model) (string, error) {
-	return "", nil
+func (d *Postgres) DDLModel(m *linq.Model) string {
+	var result string
+
+	result = ddlTable(m)
+
+	return result
 }
 
 // SelectSql return the sql to select
-func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
+func (d *Postgres) SelectSql(l *linq.Linq) string {
 	sqlSelect(l)
 
 	sqlFrom(l)
@@ -73,11 +80,11 @@ func (d *Postgres) SelectSql(l *linq.Linq) (string, error) {
 
 	sqlOffset(l)
 
-	return l.Sql, nil
+	return l.Sql
 }
 
 // CurrentSql return the sql to get the current
-func (d *Postgres) CurrentSql(l *linq.Linq) (string, error) {
+func (d *Postgres) CurrentSql(l *linq.Linq) string {
 	sqlCurrent(l)
 
 	sqlFrom(l)
@@ -86,32 +93,32 @@ func (d *Postgres) CurrentSql(l *linq.Linq) (string, error) {
 
 	sqlLimit(l)
 
-	return l.Sql, nil
+	return l.Sql
 }
 
 // InsertSql return the sql to insert
-func (d *Postgres) InsertSql(l *linq.Linq) (string, error) {
+func (d *Postgres) InsertSql(l *linq.Linq) string {
 	sqlInsert(l)
 
 	sqlReturns(l)
 
-	return l.Sql, nil
+	return l.Sql
 }
 
 // UpdateSql return the sql to update
-func (d *Postgres) UpdateSql(l *linq.Linq) (string, error) {
+func (d *Postgres) UpdateSql(l *linq.Linq) string {
 	sqlUpdate(l)
 
 	sqlReturns(l)
 
-	return l.Sql, nil
+	return l.Sql
 }
 
 // DeleteSql return the sql to delete
-func (d *Postgres) DeleteSql(l *linq.Linq) (string, error) {
+func (d *Postgres) DeleteSql(l *linq.Linq) string {
 	sqlDelete(l)
 
 	sqlReturns(l)
 
-	return l.Sql, nil
+	return l.Sql
 }

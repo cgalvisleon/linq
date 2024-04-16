@@ -38,6 +38,7 @@ type Lcommand struct {
 	From        *Lfrom
 	TypeCommand TypeCommand
 	Data        *et.Json
+	Source      *et.Json
 	Old         *et.Json
 	New         *et.Json
 }
@@ -48,6 +49,7 @@ func (l *Lcommand) Definition() et.Json {
 		"from":        l.From.Definition(),
 		"typeCommand": l.TypeCommand.String(),
 		"data":        l.Data,
+		"source":      l.Source,
 		"old":         l.Old,
 		"new":         l.New,
 	}
@@ -59,6 +61,7 @@ func newCommand(from *Lfrom, tp TypeCommand) *Lcommand {
 		From:        from,
 		TypeCommand: tp,
 		Data:        &et.Json{},
+		Source:      &et.Json{},
 		Old:         &et.Json{},
 		New:         &et.Json{},
 	}
@@ -115,18 +118,48 @@ func (c *Lcommand) commandColumn(key string, value interface{}) {
 			c.New = &et.Json{}
 		}
 
-		c.New.Set(key, value)
+		if c.New.Get(key) == nil {
+			c.New.Set(key, value)
+		}
+
+		if c.Source.Get(key) == nil {
+			c.Source.Set(key, value)
+		}
+	}
+
+	setSource := func() {
+		if c.Source == nil {
+			c.Source = &et.Json{}
+		}
+
+		if c.New.Get(key) == nil {
+			c.New.Set(key, value)
+		}
+
+		if c.Source.Get(m.SourceField) == nil {
+			c.Source.Set(m.SourceField, et.Json{
+				key: value,
+			})
+		} else {
+			source := c.Source.Json(m.SourceField)
+			if source.Get(key) == nil {
+				source.Set(key, value)
+				c.Source.Set(m.SourceField, source)
+			}
+		}
 	}
 
 	if col.TypeColumn == TpAtrib {
 		c.Linq.GetAtrib(col)
-		setNew()
+		setSource()
 		return
 	}
 
 	if col.TypeColumn == TpColumn {
 		c.Linq.GetColumn(col)
-		setNew()
+		if !col.SourceField {
+			setNew()
+		}
 		return
 	}
 }
@@ -141,14 +174,20 @@ func (c *Lcommand) consolidate() {
 		return
 	}
 
-	for k, v := range *c.Data {
-		c.commandColumn(k, v)
-	}
-
 	if c.TypeCommand == TpInsert {
 		from := c.From
 		for _, col := range from.Model.Columns {
-			c.commandColumn(col.Name, col.Default.Value())
+			key := col.Low()
+			val := c.Data.Get(key)
+			if val == nil {
+				c.commandColumn(key, col.Default.Value())
+			} else {
+				c.commandColumn(key, val)
+			}
+		}
+	} else {
+		for k, v := range *c.Data {
+			c.commandColumn(k, v)
 		}
 	}
 }
