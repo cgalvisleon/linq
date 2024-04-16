@@ -3,50 +3,11 @@ package lib
 import (
 	"database/sql"
 
-	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 	"github.com/cgalvisleon/et/utility"
 	"github.com/cgalvisleon/linq/linq"
 )
-
-// Query execute a query in the database
-func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
-	if db == nil {
-		return et.Items{}, logs.Alertm("Database is required")
-	}
-
-	sql = linq.SQLParse(sql, args...)
-	rows, err := db.Query(sql)
-	if err != nil {
-		return et.Items{}, err
-	}
-	defer rows.Close()
-
-	items := linq.RowsItems(rows)
-
-	return items, nil
-}
-
-// QueryOne execute a query in the database and return one item
-func QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
-	items, err := Query(db, sql, args...)
-	if err != nil {
-		return et.Item{}, err
-	}
-
-	if items.Count == 0 {
-		return et.Item{
-			Ok:     false,
-			Result: et.Json{},
-		}, nil
-	}
-
-	return et.Item{
-		Ok:     items.Ok,
-		Result: items.Result[0],
-	}, nil
-}
 
 // ExistDatabase check if the database exists
 func ExistDatabase(db *sql.DB, name string) (bool, error) {
@@ -57,7 +18,7 @@ func ExistDatabase(db *sql.DB, name string) (bool, error) {
 		FROM pg_database
 		WHERE UPPER(datname) = UPPER($1));`
 
-	item, err := QueryOne(db, sql, name)
+	item, err := linq.QueryOne(db, sql, name)
 	if err != nil {
 		return false, err
 	}
@@ -74,7 +35,7 @@ func ExistSchema(db *sql.DB, name string) (bool, error) {
 		FROM pg_namespace
 		WHERE UPPER(nspname) = UPPER($1));`
 
-	item, err := QueryOne(db, sql, name)
+	item, err := linq.QueryOne(db, sql, name)
 	if err != nil {
 		return false, err
 	}
@@ -91,7 +52,7 @@ func ExistTable(db *sql.DB, schema, name string) (bool, error) {
 		WHERE UPPER(table_schema) = UPPER($1)
 		AND UPPER(table_name) = UPPER($2));`
 
-	item, err := QueryOne(db, sql, schema, name)
+	item, err := linq.QueryOne(db, sql, schema, name)
 	if err != nil {
 		return false, err
 	}
@@ -109,7 +70,7 @@ func ExistColum(db *sql.DB, schema, table, name string) (bool, error) {
 		AND UPPER(table_name) = UPPER($2)
 		AND UPPER(column_name) = UPPER($3));`
 
-	item, err := QueryOne(db, sql, schema, table, name)
+	item, err := linq.QueryOne(db, sql, schema, table, name)
 	if err != nil {
 		return false, err
 	}
@@ -128,7 +89,7 @@ func ExistIndex(db *sql.DB, schema, table, field string) (bool, error) {
 		AND UPPER(tablename) = UPPER($2)
 		AND UPPER(indexname) = UPPER($3));`
 
-	item, err := QueryOne(db, sql, schema, table, indexName)
+	item, err := linq.QueryOne(db, sql, schema, table, indexName)
 	if err != nil {
 		return false, err
 	}
@@ -146,7 +107,7 @@ func ExistTrigger(db *sql.DB, schema, table, name string) (bool, error) {
 		AND UPPER(event_object_table) = UPPER($2)
 		AND UPPER(trigger_name) = UPPER($3));`
 
-	item, err := QueryOne(db, sql, schema, table, name)
+	item, err := linq.QueryOne(db, sql, schema, table, name)
 	if err != nil {
 		return false, err
 	}
@@ -163,7 +124,7 @@ func ExistSerie(db *sql.DB, schema, name string) (bool, error) {
 		WHERE UPPER(schemaname) = UPPER($1)
 		AND UPPER(sequencename) = UPPER($2));`
 
-	item, err := QueryOne(db, sql, schema, name)
+	item, err := linq.QueryOne(db, sql, schema, name)
 	if err != nil {
 		return false, err
 	}
@@ -180,7 +141,7 @@ func ExistUser(db *sql.DB, name string) (bool, error) {
 		FROM pg_roles
 		WHERE UPPER(rolname) = UPPER($1));`
 
-	item, err := QueryOne(db, sql, name)
+	item, err := linq.QueryOne(db, sql, name)
 	if err != nil {
 		return false, err
 	}
@@ -199,7 +160,7 @@ func CreateDatabase(db *sql.DB, name string) (bool, error) {
 	if !exists {
 		sql := strs.Format(`CREATE DATABASE %s;`, name)
 
-		_, err := Query(db, sql)
+		_, err := linq.Query(db, sql)
 		if err != nil {
 			return false, err
 		}
@@ -219,7 +180,7 @@ func CreateSchema(db *sql.DB, name string) (bool, error) {
 	if !exists {
 		sql := strs.Format(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; CREATE SCHEMA IF NOT EXISTS "%s";`, name)
 
-		_, err := Query(db, sql)
+		_, err := linq.Query(db, sql)
 		if err != nil {
 			return false, err
 		}
@@ -248,7 +209,7 @@ func CreateColumn(db *sql.DB, schema, table, name, kind, defaultValue string) (b
 		END;
 		$$;`, tableName, strs.Uppcase(name), strs.Uppcase(kind), defaultValue)
 
-		_, err := Query(db, sql)
+		_, err := linq.Query(db, sql)
 		if err != nil {
 			return false, err
 		}
@@ -269,7 +230,7 @@ func CreateIndex(db *sql.DB, schema, table, field string) (bool, error) {
 		CREATE INDEX IF NOT EXISTS $2_$3_IDX ON $1.$2($3);`,
 			strs.Uppcase(schema), strs.Uppcase(table), strs.Uppcase(field))
 
-		_, err := Query(db, sql)
+		_, err := linq.Query(db, sql)
 		if err != nil {
 			return false, err
 		}
@@ -294,7 +255,7 @@ func CreateTrigger(db *sql.DB, schema, table, name, when, event, function string
 		EXECUTE PROCEDURE $6;`,
 			strs.Uppcase(schema), strs.Uppcase(table), strs.Uppcase(name), when, event, function)
 
-		_, err := Query(db, sql)
+		_, err := linq.Query(db, sql)
 		if err != nil {
 			return false, err
 		}
@@ -313,7 +274,7 @@ func CreateSerie(db *sql.DB, schema, tag string) (bool, error) {
 	if !exists {
 		sql := strs.Format(`CREATE SEQUENCE IF NOT EXISTS %s START 1;`, tag)
 
-		_, err := Query(db, sql)
+		_, err := linq.Query(db, sql)
 		if err != nil {
 			return false, err
 		}
@@ -338,7 +299,7 @@ func CreateUser(db *sql.DB, name, password string) (bool, error) {
 
 		sql := strs.Format(`CREATE USER %s WITH PASSWORD '%s';`, name, passwordHash)
 
-		_, err = Query(db, sql)
+		_, err = linq.Query(db, sql)
 		if err != nil {
 			return false, err
 		}
@@ -365,7 +326,7 @@ func ChangePassword(db *sql.DB, name, password string) (bool, error) {
 
 	sql := strs.Format(`ALTER USER %s WITH PASSWORD '%s';`, name, passwordHash)
 
-	_, err = Query(db, sql)
+	_, err = linq.Query(db, sql)
 	if err != nil {
 		return false, err
 	}
@@ -377,7 +338,7 @@ func ChangePassword(db *sql.DB, name, password string) (bool, error) {
 func DropDatabase(db *sql.DB, name string) error {
 	name = strs.Lowcase(name)
 	sql := strs.Format(`DROP DATABASE %s;`, name)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}
@@ -389,7 +350,7 @@ func DropDatabase(db *sql.DB, name string) error {
 func DropSchema(db *sql.DB, name string) error {
 	name = strs.Lowcase(name)
 	sql := strs.Format(`DROP SCHEMA %s CASCADE;`, name)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}
@@ -400,7 +361,7 @@ func DropSchema(db *sql.DB, name string) error {
 // DropTable drop a table if exists
 func DropTable(db *sql.DB, schema, name string) error {
 	sql := strs.Format(`DROP TABLE %s.%s CASCADE;`, schema, name)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}
@@ -411,7 +372,7 @@ func DropTable(db *sql.DB, schema, name string) error {
 // DropColumn drop a column if exists in the table
 func DropColumn(db *sql.DB, schema, table, name string) error {
 	sql := strs.Format(`ALTER TABLE %s.%s DROP COLUMN %s;`, schema, table, name)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}
@@ -423,7 +384,7 @@ func DropColumn(db *sql.DB, schema, table, name string) error {
 func DropIndex(db *sql.DB, schema, table, field string) error {
 	indexName := strs.Format(`%s_%s_IDX`, strs.Uppcase(table), strs.Uppcase(field))
 	sql := strs.Format(`DROP INDEX %s.%s CASCADE;`, schema, indexName)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}
@@ -434,7 +395,7 @@ func DropIndex(db *sql.DB, schema, table, field string) error {
 // DropTrigger drop a trigger if exists in the table
 func DropTrigger(db *sql.DB, schema, table, name string) error {
 	sql := strs.Format(`DROP TRIGGER %s.%s CASCADE;`, schema, name)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}
@@ -445,7 +406,7 @@ func DropTrigger(db *sql.DB, schema, table, name string) error {
 // DropSerie drop a serie if exists
 func DropSerie(db *sql.DB, schema, name string) error {
 	sql := strs.Format(`DROP SEQUENCE %s.%s CASCADE;`, schema, name)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}
@@ -457,7 +418,7 @@ func DropSerie(db *sql.DB, schema, name string) error {
 func DropUser(db *sql.DB, name string) error {
 	name = strs.Uppcase(name)
 	sql := strs.Format(`DROP USER %s;`, name)
-	_, err := Query(db, sql)
+	_, err := linq.Query(db, sql)
 	if err != nil {
 		return err
 	}

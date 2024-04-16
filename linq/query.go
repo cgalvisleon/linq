@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"database/sql"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
 )
@@ -37,6 +39,55 @@ func (d TypeQuery) String() string {
 	return ""
 }
 
+// Query execute a query in the database
+func query(db *sql.DB, sql string, args ...any) (*sql.Rows, error) {
+	if db == nil {
+		return nil, logs.Alertm("Database is required")
+	}
+
+	parse := SQLParse(sql, args...)
+	sql = SQLParse(parse)
+	rows, err := db.Query(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
+}
+
+// Query execute a query in the database
+func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
+	rows, err := query(db, sql, args...)
+	if err != nil {
+		return et.Items{}, err
+	}
+	defer rows.Close()
+
+	items := RowsItems(rows)
+
+	return items, nil
+}
+
+// QueryOne execute a query in the database and return one item
+func QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
+	items, err := Query(db, sql, args...)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if items.Count == 0 {
+		return et.Item{
+			Ok:     false,
+			Result: et.Json{},
+		}, nil
+	}
+
+	return et.Item{
+		Ok:     items.Ok,
+		Result: items.Result[0],
+	}, nil
+}
+
 // Return sql select by linq
 func (l *Linq) selectSql() (string, error) {
 	return l.Db.selectSql(l)
@@ -61,8 +112,7 @@ func (l *Linq) query(sql string, args ...any) (et.Items, error) {
 		return et.Items{}, logs.Alertm("Linq not built")
 	}
 
-	query := SQLParse(sql, args...)
-	rows, err := l.Db.DB.Query(query)
+	rows, err := query(l.Db.DB, sql, args...)
 	if err != nil {
 		return et.Items{}, logs.Error(err)
 	}
