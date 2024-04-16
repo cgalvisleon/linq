@@ -10,6 +10,7 @@ import (
 	"github.com/cgalvisleon/linq/linq"
 )
 
+// Query execute a query in the database
 func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	if db == nil {
 		return et.Items{}, logs.Alertm("Database is required")
@@ -27,6 +28,7 @@ func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	return items, nil
 }
 
+// QueryOne execute a query in the database and return one item
 func QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
 	items, err := Query(db, sql, args...)
 	if err != nil {
@@ -46,6 +48,7 @@ func QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
 	}, nil
 }
 
+// ExistDatabase check if the database exists
 func ExistDatabase(db *sql.DB, name string) (bool, error) {
 	name = strs.Lowcase(name)
 	sql := `
@@ -62,6 +65,7 @@ func ExistDatabase(db *sql.DB, name string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
+// ExistSchema check if the schema exists
 func ExistSchema(db *sql.DB, name string) (bool, error) {
 	name = strs.Lowcase(name)
 	sql := `
@@ -78,6 +82,7 @@ func ExistSchema(db *sql.DB, name string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
+// ExistTable check if the table exists
 func ExistTable(db *sql.DB, schema, name string) (bool, error) {
 	sql := `
 	SELECT EXISTS(
@@ -94,6 +99,7 @@ func ExistTable(db *sql.DB, schema, name string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
+// ExistColum check if the column exists in the table
 func ExistColum(db *sql.DB, schema, table, name string) (bool, error) {
 	sql := `
 	SELECT EXISTS(
@@ -111,6 +117,7 @@ func ExistColum(db *sql.DB, schema, table, name string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
+// ExistIndex check if the index exists in the table
 func ExistIndex(db *sql.DB, schema, table, field string) (bool, error) {
 	indexName := strs.Format(`%s_%s_IDX`, strs.Uppcase(table), strs.Uppcase(field))
 	sql := `
@@ -129,6 +136,7 @@ func ExistIndex(db *sql.DB, schema, table, field string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
+// ExistTrigger check if the trigger exists in the table
 func ExistTrigger(db *sql.DB, schema, table, name string) (bool, error) {
 	sql := `
 	SELECT EXISTS(
@@ -146,6 +154,7 @@ func ExistTrigger(db *sql.DB, schema, table, name string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
+// ExistSerie check if the serie exists
 func ExistSerie(db *sql.DB, schema, name string) (bool, error) {
 	sql := `
 	SELECT EXISTS(
@@ -162,6 +171,7 @@ func ExistSerie(db *sql.DB, schema, name string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
+// ExistUser check if the user exists
 func ExistUser(db *sql.DB, name string) (bool, error) {
 	name = strs.Uppcase(name)
 	sql := `
@@ -178,9 +188,7 @@ func ExistUser(db *sql.DB, name string) (bool, error) {
 	return item.Bool("exists"), nil
 }
 
-/**
-*
-**/
+// CreateDatabase create a database if not exists
 func CreateDatabase(db *sql.DB, name string) (bool, error) {
 	name = strs.Lowcase(name)
 	exists, err := ExistDatabase(db, name)
@@ -200,6 +208,7 @@ func CreateDatabase(db *sql.DB, name string) (bool, error) {
 	return !exists, nil
 }
 
+// CreateSchema create a schema if not exists
 func CreateSchema(db *sql.DB, name string) (bool, error) {
 	name = strs.Lowcase(name)
 	exists, err := ExistSchema(db, name)
@@ -219,6 +228,7 @@ func CreateSchema(db *sql.DB, name string) (bool, error) {
 	return !exists, nil
 }
 
+// CreateColumn create a column if not exists in the table
 func CreateColumn(db *sql.DB, schema, table, name, kind, defaultValue string) (bool, error) {
 	exists, err := ExistColum(db, schema, table, name)
 	if err != nil {
@@ -247,6 +257,7 @@ func CreateColumn(db *sql.DB, schema, table, name, kind, defaultValue string) (b
 	return !exists, nil
 }
 
+// CreateIndex create a index if not exists in the table
 func CreateIndex(db *sql.DB, schema, table, field string) (bool, error) {
 	exists, err := ExistIndex(db, schema, table, field)
 	if err != nil {
@@ -267,6 +278,7 @@ func CreateIndex(db *sql.DB, schema, table, field string) (bool, error) {
 	return !exists, nil
 }
 
+// CreateTrigger create a trigger if not exists in the table
 func CreateTrigger(db *sql.DB, schema, table, name, when, event, function string) (bool, error) {
 	exists, err := ExistTrigger(db, schema, table, name)
 	if err != nil {
@@ -291,6 +303,7 @@ func CreateTrigger(db *sql.DB, schema, table, name, when, event, function string
 	return !exists, nil
 }
 
+// CreateSerie create a serie if not exists
 func CreateSerie(db *sql.DB, schema, tag string) (bool, error) {
 	exists, err := ExistSerie(db, schema, tag)
 	if err != nil {
@@ -309,6 +322,7 @@ func CreateSerie(db *sql.DB, schema, tag string) (bool, error) {
 	return !exists, nil
 }
 
+// CreateUser create a user if not exists
 func CreateUser(db *sql.DB, name, password string) (bool, error) {
 	name = strs.Uppcase(name)
 	exists, err := ExistUser(db, name)
@@ -333,6 +347,7 @@ func CreateUser(db *sql.DB, name, password string) (bool, error) {
 	return !exists, nil
 }
 
+// ChangePassword change the password of the user
 func ChangePassword(db *sql.DB, name, password string) (bool, error) {
 	exists, err := ExistUser(db, name)
 	if err != nil {
@@ -358,9 +373,7 @@ func ChangePassword(db *sql.DB, name, password string) (bool, error) {
 	return true, nil
 }
 
-/**
-*
-**/
+// DropDatabase drop a database if exists
 func DropDatabase(db *sql.DB, name string) error {
 	name = strs.Lowcase(name)
 	sql := strs.Format(`DROP DATABASE %s;`, name)
@@ -372,6 +385,7 @@ func DropDatabase(db *sql.DB, name string) error {
 	return nil
 }
 
+// DropSchema drop a schema if exists
 func DropSchema(db *sql.DB, name string) error {
 	name = strs.Lowcase(name)
 	sql := strs.Format(`DROP SCHEMA %s CASCADE;`, name)
@@ -383,6 +397,7 @@ func DropSchema(db *sql.DB, name string) error {
 	return nil
 }
 
+// DropTable drop a table if exists
 func DropTable(db *sql.DB, schema, name string) error {
 	sql := strs.Format(`DROP TABLE %s.%s CASCADE;`, schema, name)
 	_, err := Query(db, sql)
@@ -393,6 +408,7 @@ func DropTable(db *sql.DB, schema, name string) error {
 	return nil
 }
 
+// DropColumn drop a column if exists in the table
 func DropColumn(db *sql.DB, schema, table, name string) error {
 	sql := strs.Format(`ALTER TABLE %s.%s DROP COLUMN %s;`, schema, table, name)
 	_, err := Query(db, sql)
@@ -403,6 +419,7 @@ func DropColumn(db *sql.DB, schema, table, name string) error {
 	return nil
 }
 
+// DropIndex drop a index if exists in the table
 func DropIndex(db *sql.DB, schema, table, field string) error {
 	indexName := strs.Format(`%s_%s_IDX`, strs.Uppcase(table), strs.Uppcase(field))
 	sql := strs.Format(`DROP INDEX %s.%s CASCADE;`, schema, indexName)
@@ -414,6 +431,7 @@ func DropIndex(db *sql.DB, schema, table, field string) error {
 	return nil
 }
 
+// DropTrigger drop a trigger if exists in the table
 func DropTrigger(db *sql.DB, schema, table, name string) error {
 	sql := strs.Format(`DROP TRIGGER %s.%s CASCADE;`, schema, name)
 	_, err := Query(db, sql)
@@ -424,6 +442,7 @@ func DropTrigger(db *sql.DB, schema, table, name string) error {
 	return nil
 }
 
+// DropSerie drop a serie if exists
 func DropSerie(db *sql.DB, schema, name string) error {
 	sql := strs.Format(`DROP SEQUENCE %s.%s CASCADE;`, schema, name)
 	_, err := Query(db, sql)
@@ -434,6 +453,7 @@ func DropSerie(db *sql.DB, schema, name string) error {
 	return nil
 }
 
+// DropUser drop a user if exists
 func DropUser(db *sql.DB, name string) error {
 	name = strs.Uppcase(name)
 	sql := strs.Format(`DROP USER %s;`, name)

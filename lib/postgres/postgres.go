@@ -122,3 +122,44 @@ func (d *Postgres) DeleteSql(l *linq.Linq) string {
 
 	return l.Sql
 }
+
+// DCL Data Control Language execute a command
+func (d *Postgres) DCL(command string, params et.Json) error {
+	switch command {
+	case "exist_database":
+		name := params.Str("name")
+		_, err := ExistDatabase(d.DB, name)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	case "exist_schema":
+		name := params.Str("name")
+		_, err := ExistSchema(d.DB, name)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	case "exist_table":
+		schema := params.Str("schema")
+		name := params.Str("name")
+		_, err := ExistTable(d.DB, schema, name)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	case "create_database":
+		name := params.Str("name")
+		_, err := CreateDatabase(d.DB, name)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	default:
+		return nil
+	}
+}
