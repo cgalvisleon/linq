@@ -137,6 +137,9 @@ func (d DefValue) Value() interface{} {
 	return ""
 }
 
+// Details is a function for details
+type FuncDetail func(col *Column, data *et.Json)
+
 // Validation tipe function
 type Validation func(col *Column, value interface{}) bool
 

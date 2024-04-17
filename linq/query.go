@@ -88,11 +88,6 @@ func QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
 	}, nil
 }
 
-// Return sql select by linq
-func (l *Linq) selectSql() (string, error) {
-	return l.Db.selectSql(l)
-}
-
 // Return sql command by linq
 func (l *Linq) query(sql string, args ...any) (et.Items, error) {
 	if l.Db.DB == nil {
@@ -143,17 +138,17 @@ func (l *Linq) Exec() (et.Items, error) {
 	c := l.Command
 	switch c.TypeCommand {
 	case TpInsert:
-		err := c.funcInsert()
+		err := c.Insert()
 		if err != nil {
 			return et.Items{}, err
 		}
 	case TpUpdate:
-		err := c.funcUpdate()
+		err := c.Update()
 		if err != nil {
 			return et.Items{}, err
 		}
 	case TpDelete:
-		err := c.funcDelete()
+		err := c.Delete()
 		if err != nil {
 			return et.Items{}, err
 		}

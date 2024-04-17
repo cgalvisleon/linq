@@ -54,19 +54,6 @@ func (d *Database) Definition() et.Json {
 	}
 }
 
-// AddSchema add a schema to the database
-func (d *Database) addSchema(schema *Schema) {
-	for _, v := range d.Schemes {
-		if v.Name == schema.Name {
-			return
-		}
-	}
-
-	schema.Db = d
-	schema.SourceField = d.SourceField
-	d.Schemes = append(d.Schemes, schema)
-}
-
 // AddModel add a model to the database
 func (d *Database) InitModel(model *Model) error {
 	if d.DB == nil {
@@ -74,17 +61,16 @@ func (d *Database) InitModel(model *Model) error {
 	}
 
 	for _, v := range d.Models {
-		if v.Name == model.Name {
+		if v == model {
 			return nil
 		}
 	}
 
 	model.Db = d
 	model.SourceField = d.SourceField
-	d.addSchema(model.Schema)
 	d.Models = append(d.Models, model)
 
-	sql, err := d.ddlModel(model)
+	sql, err := d.ddlSql(model)
 	if err != nil {
 		return err
 	}
@@ -134,12 +120,12 @@ func (d *Database) Disconnected() error {
 }
 
 // DDLModel return the ddl to create a model
-func (d *Database) ddlModel(model *Model) (string, error) {
+func (d *Database) ddlSql(model *Model) (string, error) {
 	if d.Driver == nil {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.DDLModel(model), nil
+	return d.Driver.DdlSql(model), nil
 }
 
 // SelectSql return the sql to select

@@ -28,8 +28,8 @@ func (m *Model) DefineAtrib(name, description string, typeData TypeData, _defaul
 }
 
 // Define index in the model
-func (m *Model) DefineIndex(index []string) *Model {
-	for _, v := range index {
+func (m *Model) DefineIndex(cols []string) *Model {
+	for _, v := range cols {
 		m.AddIndex(v, true)
 	}
 
@@ -37,8 +37,8 @@ func (m *Model) DefineIndex(index []string) *Model {
 }
 
 // Define unique index in the model
-func (m *Model) DefineUniqueIndex(index []string) *Model {
-	for _, v := range index {
+func (m *Model) DefineUnique(cols []string) *Model {
+	for _, v := range cols {
 		col := m.AddIndex(v, true)
 		if col != nil {
 			col.Unique = true
@@ -49,8 +49,8 @@ func (m *Model) DefineUniqueIndex(index []string) *Model {
 }
 
 // Define hidden columns in the model
-func (m *Model) DefineHidden(hiddens []string) *Model {
-	for _, v := range hiddens {
+func (m *Model) DefineHidden(cols []string) *Model {
+	for _, v := range cols {
 		col := COlumn(m, v)
 		if col != nil {
 			col.SetHidden(true)
@@ -61,8 +61,8 @@ func (m *Model) DefineHidden(hiddens []string) *Model {
 }
 
 // Define primary key in the model
-func (m *Model) DefinePrimaryKey(keys []string) *Model {
-	for _, v := range keys {
+func (m *Model) DefinePrimaryKey(cols []string) *Model {
+	for _, v := range cols {
 		m.AddPrimaryKey(v)
 	}
 

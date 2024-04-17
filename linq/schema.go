@@ -21,10 +21,17 @@ type Schema struct {
 }
 
 // NewSchema create a new schema
-func NewSchema(name, description string) *Schema {
+func NewSchema(db *Database, name, description string) *Schema {
+	for _, v := range db.Schemes {
+		if v.Up() == strs.Uppcase(name) {
+			return v
+		}
+	}
+
 	result := &Schema{
 		Name:            strs.Lowcase(name),
 		Description:     description,
+		Db:              db,
 		Models:          []*Model{},
 		SourceField:     "_DATA",
 		DateMakeField:   "DATE_MAKE",
@@ -50,6 +57,16 @@ func (s *Schema) Definition() et.Json {
 		"description": s.Description,
 		"models":      models,
 	}
+}
+
+// Up return the name of the schema in uppercase
+func (s *Schema) Up() string {
+	return strs.Uppcase(s.Name)
+}
+
+// Low return the name of the schema in lowercase
+func (s *Schema) Low() string {
+	return strs.Lowcase(s.Name)
 }
 
 // AddModel add a model to the schema

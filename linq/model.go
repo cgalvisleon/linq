@@ -88,8 +88,8 @@ type Model struct {
 // NewModel create a new model
 func NewModel(schema *Schema, name, description string, version int) *Model {
 	result := &Model{
-		Db:              schema.Db,
 		Schema:          schema,
+		Db:              schema.Db,
 		Name:            strs.Uppcase(name),
 		Table:           schema.Name + "." + strs.Uppcase(name),
 		Description:     description,

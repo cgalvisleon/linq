@@ -14,17 +14,39 @@ func main() {
 		"user":     "test",
 		"password": "test",
 	})
-	schema := linq.NewSchema("test", "description")
-	User := linq.NewModel(schema, "User", "", 1)
-	User.DefineColum("date_make", "", linq.TpTimeStamp, linq.DefNow)
-	User.DefineColum("date_update", "", linq.TpTimeStamp, linq.DefNil)
-	User.DefineColum("_id", "", linq.TpUUId, linq.DefUuid)
-	User.DefineColum("username", "", linq.TpShortString, linq.DefString)
-	User.DefineColum("password", "", linq.TpShortString, linq.DefString)
-	User.DefineColum("edad", "", linq.TpInt, linq.DefInt)
-	User.DefineColum("_data", "", linq.TpJson, linq.DefJson)
-	User.DefineAtrib("name", "", linq.TpString, linq.DefString)
-	User.DefinePrimaryKey([]string{"_id"})
+
+	User := linq.MOdel(&linq.Definition{
+		Db:          db,
+		Schema:      "test",
+		Name:        "User",
+		Description: "",
+		Version:     1,
+		Columns: []linq.COl{
+			{Name: "date_make", Description: "", TypeData: linq.TpTimeStamp, DefValue: linq.DefNow},
+			{Name: "date_update", Description: "", TypeData: linq.TpTimeStamp, DefValue: linq.DefNil},
+			{Name: "_id", Description: "", TypeData: linq.TpUUId, DefValue: linq.DefUuid},
+			{Name: "username", Description: "", TypeData: linq.TpShortString, DefValue: linq.DefString},
+			{Name: "password", Description: "", TypeData: linq.TpShortString, DefValue: linq.DefString},
+			{Name: "edad", Description: "", TypeData: linq.TpInt, DefValue: linq.DefInt},
+			{Name: "_data", Description: "", TypeData: linq.TpJson, DefValue: linq.DefJson},
+		},
+		Atribs: []linq.COl{
+			{Name: "name", Description: "", TypeData: linq.TpString, DefValue: linq.DefString},
+		},
+		PrimaryKey: []string{"_id"},
+	})
+
+	schema := linq.NewSchema(db, "test", "description")
+	// User := linq.NewModel(schema, "User", "", 1)
+	// User.DefineColum("date_make", "", linq.TpTimeStamp, linq.DefNow)
+	// User.DefineColum("date_update", "", linq.TpTimeStamp, linq.DefNil)
+	// User.DefineColum("_id", "", linq.TpUUId, linq.DefUuid)
+	// User.DefineColum("username", "", linq.TpShortString, linq.DefString)
+	// User.DefineColum("password", "", linq.TpShortString, linq.DefString)
+	// User.DefineColum("edad", "", linq.TpInt, linq.DefInt)
+	// User.DefineColum("_data", "", linq.TpJson, linq.DefJson)
+	// User.DefineAtrib("name", "", linq.TpString, linq.DefString)
+	// User.DefinePrimaryKey([]string{"_id"})
 
 	Modelo := linq.NewModel(schema, "Model", "", 1)
 	Modelo.DefineColum("date_make", "", linq.TpTimeStamp, linq.DefNow)

@@ -52,7 +52,7 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 }
 
 // DDLModel return the ddl to create the model
-func (d *Postgres) DDLModel(m *linq.Model) string {
+func (d *Postgres) DdlSql(m *linq.Model) string {
 	var result string
 
 	result = ddlTable(m)
