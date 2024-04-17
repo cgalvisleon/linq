@@ -46,7 +46,6 @@ type TRigger struct {
 }
 
 type Definition struct {
-	Db          *Database
 	Schema      string
 	Name        string
 	Description string
@@ -68,7 +67,7 @@ type Definition struct {
 }
 
 func MOdel(def *Definition) *Model {
-	schema := NewSchema(def.Db, def.Schema, "")
+	schema := NewSchema(def.Schema, "")
 	result := NewModel(schema, def.Name, def.Description, def.Version)
 	for _, col := range def.Columns {
 		result.DefineColum(col.Name, col.Description, col.TypeData, col.DefValue)

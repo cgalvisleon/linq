@@ -21,8 +21,8 @@ type Schema struct {
 }
 
 // NewSchema create a new schema
-func NewSchema(db *Database, name, description string) *Schema {
-	for _, v := range db.Schemes {
+func NewSchema(name, description string) *Schema {
+	for _, v := range schemas {
 		if v.Up() == strs.Uppcase(name) {
 			return v
 		}
@@ -31,7 +31,6 @@ func NewSchema(db *Database, name, description string) *Schema {
 	result := &Schema{
 		Name:            strs.Lowcase(name),
 		Description:     description,
-		Db:              db,
 		Models:          []*Model{},
 		SourceField:     "_DATA",
 		DateMakeField:   "DATE_MAKE",
@@ -41,6 +40,8 @@ func NewSchema(db *Database, name, description string) *Schema {
 		ProjectField:    "PROJECT_ID",
 		IdTField:        "_IDT",
 	}
+
+	schemas = append(schemas, result)
 
 	return result
 }

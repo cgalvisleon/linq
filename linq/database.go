@@ -21,6 +21,12 @@ type Database struct {
 
 // NewDatabase create a new database
 func NewDatabase(name, description string, drive Driver) *Database {
+	for _, v := range dbs {
+		if v.Name == strs.Uppcase(name) {
+			return v
+		}
+	}
+
 	result := &Database{
 		Name:        strs.Lowcase(name),
 		Description: description,
@@ -29,6 +35,8 @@ func NewDatabase(name, description string, drive Driver) *Database {
 		Schemes:     []*Schema{},
 		Models:      []*Model{},
 	}
+
+	dbs = append(dbs, result)
 
 	return result
 }
@@ -66,9 +74,8 @@ func (d *Database) InitModel(model *Model) error {
 		}
 	}
 
-	model.Db = d
-	model.SourceField = d.SourceField
-	d.Models = append(d.Models, model)
+	model.SetDb(d)
+	model.SetSourceField(d.SourceField)
 
 	sql, err := d.ddlSql(model)
 	if err != nil {
@@ -83,6 +90,32 @@ func (d *Database) InitModel(model *Model) error {
 	// }
 
 	return nil
+}
+
+// Get or add a schema to the database
+func (d *Database) GetSchema(val *Schema) *Schema {
+	for _, v := range d.Schemes {
+		if v == val {
+			return v
+		}
+	}
+
+	d.Schemes = append(d.Schemes, val)
+
+	return val
+}
+
+// Get or add a model to the database
+func (d *Database) GetModel(val *Model) *Model {
+	for _, v := range d.Models {
+		if v == val {
+			return v
+		}
+	}
+
+	d.Models = append(d.Models, val)
+
+	return val
 }
 
 func (d *Database) Model(name string) *Model {

@@ -190,7 +190,7 @@ func CreateSchema(db *sql.DB, name string) (bool, error) {
 }
 
 // CreateColumn create a column if not exists in the table
-func CreateColumn(db *sql.DB, schema, table, name, kind, defaultValue string) (bool, error) {
+func CreateColumn(db *sql.DB, schema, table, name, kind, _default string) (bool, error) {
 	exists, err := ExistColum(db, schema, table, name)
 	if err != nil {
 		return false, err
@@ -207,7 +207,7 @@ func CreateColumn(db *sql.DB, schema, table, name, kind, defaultValue string) (b
 				WHEN duplicate_column THEN RAISE NOTICE 'column <column_name> already exists in <table_name>.';
 			END;
 		END;
-		$$;`, tableName, strs.Uppcase(name), strs.Uppcase(kind), defaultValue)
+		$$;`, tableName, strs.Uppcase(name), strs.Uppcase(kind), _default)
 
 		_, err := linq.Query(db, sql)
 		if err != nil {

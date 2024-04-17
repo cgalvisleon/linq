@@ -16,7 +16,6 @@ func main() {
 	})
 
 	User := linq.MOdel(&linq.Definition{
-		Db:          db,
 		Schema:      "test",
 		Name:        "User",
 		Description: "",
@@ -36,26 +35,23 @@ func main() {
 		PrimaryKey: []string{"_id"},
 	})
 
-	schema := linq.NewSchema(db, "test", "description")
-	// User := linq.NewModel(schema, "User", "", 1)
-	// User.DefineColum("date_make", "", linq.TpTimeStamp, linq.DefNow)
-	// User.DefineColum("date_update", "", linq.TpTimeStamp, linq.DefNil)
-	// User.DefineColum("_id", "", linq.TpUUId, linq.DefUuid)
-	// User.DefineColum("username", "", linq.TpShortString, linq.DefString)
-	// User.DefineColum("password", "", linq.TpShortString, linq.DefString)
-	// User.DefineColum("edad", "", linq.TpInt, linq.DefInt)
-	// User.DefineColum("_data", "", linq.TpJson, linq.DefJson)
-	// User.DefineAtrib("name", "", linq.TpString, linq.DefString)
-	// User.DefinePrimaryKey([]string{"_id"})
-
-	Modelo := linq.NewModel(schema, "Model", "", 1)
-	Modelo.DefineColum("date_make", "", linq.TpTimeStamp, linq.DefNow)
-	Modelo.DefineColum("_id", "", linq.TpUUId, linq.DefUuid)
-	Modelo.DefineColum("name", "", linq.TpString, linq.DefString)
-	Modelo.DefineColum("description", "", linq.TpString, linq.DefString)
-	Modelo.DefineColum("user_id", "", linq.TpUUId, linq.DefUuid)
-	Modelo.DefinePrimaryKey([]string{"_id"})
-	Modelo.DefineForeignKey([]string{"user_id"}, User, []string{"_id"})
+	Modelo := linq.MOdel(&linq.Definition{
+		Schema:      "test",
+		Name:        "Model",
+		Description: "",
+		Version:     1,
+		Columns: []linq.COl{
+			{Name: "date_make", Description: "", TypeData: linq.TpTimeStamp, DefValue: linq.DefNow},
+			{Name: "_id", Description: "", TypeData: linq.TpUUId, DefValue: linq.DefUuid},
+			{Name: "name", Description: "", TypeData: linq.TpString, DefValue: linq.DefString},
+			{Name: "description", Description: "", TypeData: linq.TpString, DefValue: linq.DefString},
+			{Name: "user_id", Description: "", TypeData: linq.TpUUId, DefValue: linq.DefUuid},
+		},
+		PrimaryKey: []string{"_id"},
+		ForeignKey: []linq.FKey{
+			{ForeignKey: []string{"user_id"}, ParentModel: User, ParentKey: []string{"_id"}},
+		},
+	})
 
 	if db.InitModel(User) != nil {
 		logs.Errorm("Error")

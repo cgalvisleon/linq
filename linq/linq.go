@@ -5,6 +5,13 @@ import (
 	"github.com/cgalvisleon/et/strs"
 )
 
+var (
+	dbs     []*Database
+	schemas []*Schema
+	models  []*Model
+)
+
+// Define type columns in linq
 type Lcolumns struct {
 	Used    bool
 	Columns []*Lselect
@@ -145,4 +152,10 @@ func (l *Linq) Debug() *Linq {
 	l.debug = true
 
 	return l
+}
+
+func init() {
+	dbs = []*Database{}
+	schemas = []*Schema{}
+	models = []*Model{}
 }

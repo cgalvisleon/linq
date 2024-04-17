@@ -80,6 +80,7 @@ type Model struct {
 	Details         []*Column
 	Hidden          []*Column
 	Required        []*Column
+	Source          *Column
 	SourceField     string
 	DateMakeField   string
 	DateUpdateField string
@@ -108,11 +109,19 @@ type Model struct {
 
 // NewModel create a new model
 func NewModel(schema *Schema, name, description string, version int) *Model {
+	table := schema.Name + "." + strs.Uppcase(name)
+
+	for _, v := range models {
+		if strs.Uppcase(v.Table) == strs.Uppcase(table) {
+			return v
+		}
+	}
+
 	result := &Model{
 		Schema:          schema,
 		Db:              schema.Db,
 		Name:            strs.Uppcase(name),
-		Table:           schema.Name + "." + strs.Uppcase(name),
+		Table:           table,
 		Description:     description,
 		Columns:         []*Column{},
 		PrimaryKeys:     []*Column{},
@@ -133,6 +142,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 	result.AddIndexColumn(_idT, true)
 
 	schema.AddModel(result)
+	models = append(models, result)
 
 	return result
 }
@@ -160,6 +170,31 @@ func (m *Model) Definition() et.Json {
 	}
 
 	return result
+}
+
+// Set db to model
+func (m *Model) Init(db *Database) error {
+	return db.InitModel(m)
+}
+
+func (m *Model) SetDb(db *Database) {
+	m.Db = db
+	m.Schema.Db = db
+
+	db.GetSchema(m.Schema)
+	db.GetModel(m)
+}
+
+// Set source field to model
+func (m *Model) SetSourceField(name string) {
+	col := m.Column(name)
+	if col != nil {
+		col.SourceField = true
+		m.SourceField = name
+		m.UseSource = true
+		m.Source = col
+		m.Schema.SourceField = name
+	}
 }
 
 // Find a column in the model
