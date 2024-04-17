@@ -40,6 +40,11 @@ type ColSql struct {
 	Sql  string
 }
 
+type TRigger struct {
+	TypeTrigger TypeTrigger
+	Trigger     Trigger
+}
+
 type Definition struct {
 	Db          *Database
 	Schema      string
@@ -57,6 +62,9 @@ type Definition struct {
 	Capactions  []ColCap
 	Details     []ColDetail
 	ColSql      []ColSql
+	ColHidden   []string
+	ColRequired []string
+	Trigger     []TRigger
 }
 
 func MOdel(def *Definition) *Model {
@@ -83,6 +91,13 @@ func MOdel(def *Definition) *Model {
 	}
 	for _, sql := range def.ColSql {
 		result.DefineSQL(sql.Name, sql.Sql)
+	}
+	result.DefineHidden(def.ColHidden)
+	for _, col := range def.ColRequired {
+		result.DefineRequired(col, "")
+	}
+	for _, trig := range def.Trigger {
+		result.DefineTrigger(trig.TypeTrigger, trig.Trigger)
 	}
 
 	return result

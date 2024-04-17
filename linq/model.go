@@ -18,6 +18,25 @@ const (
 	AfterDelete
 )
 
+// String return string of type trigger
+func (t TypeTrigger) String() string {
+	switch t {
+	case BeforeInsert:
+		return "beforeInsert"
+	case AfterInsert:
+		return "afterInsert"
+	case BeforeUpdate:
+		return "beforeUpdate"
+	case AfterUpdate:
+		return "afterUpdate"
+	case BeforeDelete:
+		return "beforeDelete"
+	case AfterDelete:
+		return "afterDelete"
+	}
+	return ""
+}
+
 // Constraint is a struct for foreign key
 type Constraint struct {
 	Name        string
@@ -59,6 +78,8 @@ type Model struct {
 	ForeignKey      []*Constraint
 	Index           []*Index
 	Details         []*Column
+	Hidden          []*Column
+	Required        []*Column
 	SourceField     string
 	DateMakeField   string
 	DateUpdateField string

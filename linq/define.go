@@ -60,6 +60,15 @@ func (m *Model) DefineHidden(cols []string) *Model {
 	return m
 }
 
+func (m *Model) DefineRequired(col string, msg string) *Model {
+	column := COlumn(m, col)
+	if column != nil {
+		column.SetRequired(true, msg)
+	}
+
+	return m
+}
+
 // Define primary key in the model
 func (m *Model) DefinePrimaryKey(cols []string) *Model {
 	for _, v := range cols {
@@ -138,4 +147,21 @@ func (m *Model) DefineSQL(name, sql string) *Column {
 	result.Sql = sql
 
 	return result
+}
+
+func (m *Model) DefineTrigger(event TypeTrigger, trigger Trigger) {
+	switch event {
+	case BeforeInsert:
+		m.BeforeInsert = append(m.BeforeInsert, trigger)
+	case AfterInsert:
+		m.AfterInsert = append(m.AfterInsert, trigger)
+	case BeforeUpdate:
+		m.BeforeUpdate = append(m.BeforeUpdate, trigger)
+	case AfterUpdate:
+		m.AfterUpdate = append(m.AfterUpdate, trigger)
+	case BeforeDelete:
+		m.BeforeDelete = append(m.BeforeDelete, trigger)
+	case AfterDelete:
+		m.AfterDelete = append(m.AfterDelete, trigger)
+	}
 }

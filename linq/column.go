@@ -340,6 +340,14 @@ func (c *Column) IsHidden() bool {
 // Hidden set hidden column
 func (c *Column) SetHidden(val bool) {
 	c.hidden = val
+	c.Model.Hidden = append(c.Model.Hidden, c)
+}
+
+// SetRequired set required column
+func (c *Column) SetRequired(val bool, msg string) {
+	c.Required = true
+	c.RequiredMsg = msg
+	c.Model.Required = append(c.Model.Required, c)
 }
 
 // Indexed add a index to column
