@@ -95,7 +95,7 @@ func (d *Database) InitModel(model *Model) error {
 		logs.Debug(sql)
 	}
 
-	_, err = Query(d.DB, sql)
+	_, err = Exec(d.DB, sql)
 	if err != nil {
 		return err
 	}

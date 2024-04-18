@@ -87,6 +87,7 @@ type Model struct {
 	PrimaryKeys     []*Column
 	ForeignKey      []*Constraint
 	Index           []*Index
+	Unique          []*Index
 	Details         []*Column
 	Hidden          []*Column
 	Required        []*Column
@@ -119,7 +120,7 @@ type Model struct {
 
 // NewModel create a new model
 func NewModel(schema *Schema, name, description string, version int) *Model {
-	table := schema.Name + "." + strs.Uppcase(name)
+	table := strs.Append(schema.Name, strs.Uppcase(name), ".")
 
 	for _, v := range models {
 		if strs.Uppcase(v.Table) == strs.Uppcase(table) {
@@ -137,6 +138,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		PrimaryKeys:     []*Column{},
 		ForeignKey:      []*Constraint{},
 		Index:           []*Index{},
+		Unique:          []*Index{},
 		Details:         []*Column{},
 		Version:         version,
 		SourceField:     schema.SourceField,
@@ -149,7 +151,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 	}
 
 	_idT := result.DefineColum(result.IdTField, "_idT of the table", TpUUId, DefUuid)
-	result.AddIndexColumn(_idT, true)
+	result.AddUniqueColumn(_idT, true)
 
 	schema.AddModel(result)
 	models = append(models, result)
@@ -179,6 +181,11 @@ func (m *Model) Definition() et.Json {
 		index = append(index, v.Describe())
 	}
 
+	var unique []et.Json = []et.Json{}
+	for _, v := range m.Unique {
+		unique = append(unique, v.Describe())
+	}
+
 	result := et.Json{
 		"name":        m.Name,
 		"description": m.Description,
@@ -187,6 +194,7 @@ func (m *Model) Definition() et.Json {
 		"primaryKeys": primaryKeys,
 		"foreignKey":  foreignKey,
 		"index":       index,
+		"unique":      unique,
 	}
 
 	return result
@@ -200,6 +208,10 @@ func (m *Model) Init(db *Database) error {
 func (m *Model) SetDb(db *Database) {
 	m.Db = db
 	m.Schema.Db = db
+	driver := *db.Driver
+	if driver.Type() == "sqlite" {
+		m.Table = m.Name
+	}
 
 	db.GetSchema(m.Schema)
 	db.GetModel(m)
@@ -235,6 +247,30 @@ func (m *Model) C(name string) *Column {
 // Method short to find a column in the model
 func (m *Model) Col(name string) *Column {
 	return m.Column(name)
+}
+
+// Add unique column to the model
+func (m *Model) AddUniqueColumn(col *Column, asc bool) {
+	for _, v := range m.Unique {
+		if v.Column == col {
+			return
+		}
+	}
+
+	col.Unique = true
+	m.Unique = append(m.Unique, &Index{Column: col, Asc: asc})
+}
+
+// Add unique column by name to the model
+func (m *Model) AddUnique(name string, asc bool) *Column {
+	col := COlumn(m, name)
+	if col == nil {
+		return nil
+	}
+
+	m.AddUniqueColumn(col, asc)
+
+	return col
 }
 
 // Add index column to the model

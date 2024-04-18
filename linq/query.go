@@ -53,6 +53,21 @@ func query(db *sql.DB, sql string, args ...any) (*sql.Rows, error) {
 	return rows, nil
 }
 
+// Exec execute a command in the database
+func Exec(db *sql.DB, sql string, args ...any) (sql.Result, error) {
+	if db == nil {
+		return nil, logs.Alertm("Database is required")
+	}
+
+	result, err := db.Exec(sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// Query execute a query in the database
 func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	rows, err := query(db, sql, args...)
 	if err != nil {
@@ -65,6 +80,7 @@ func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	return items, nil
 }
 
+// QueryOne execute a query in the database and return one item
 func QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
 	items, err := Query(db, sql, args...)
 	if err != nil {

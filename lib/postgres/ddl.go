@@ -128,7 +128,10 @@ func ddlIndex(col *linq.Column) string {
 
 // ddlUnique return sql unique index ddl
 func ddlUnique(col *linq.Column) string {
-	return strs.Format(`CREATE UNIQUE INDEX IF NOT EXISTS %v_%v_IDX ON %v(%v);`, strs.Uppcase(col.Table()), col.Up(), strs.Uppcase(col.Table()), col.Up())
+	name := strs.Format(`%v_%v_IDX`, strs.Uppcase(col.Table()), col.Up())
+	name = strs.Replace(name, "-", "_")
+	name = strs.Replace(name, ".", "_")
+	return strs.Format(`CREATE UNIQUE INDEX IF NOT EXISTS %v ON %v(%v);`, name, strs.Uppcase(col.Table()), col.Up())
 }
 
 // ddlPrimaryKey return sql primary key ddl
@@ -175,7 +178,7 @@ func ddlTable(model *linq.Model) string {
 	}
 	schema := ddlSchema(model.Schema)
 	result = strs.Append(result, schema, "\n")
-	table := strs.Format(`CREATE TABLE IF NOT EXISTS %s (%s);`, model.Table, columns)
+	table := strs.Format("CREATE TABLE IF NOT EXISTS %s (\n%s);", model.Table, columns)
 	result = strs.Append(result, table, "\n")
 	result = strs.Append(result, indexs, "\n")
 	foreign := ddlForeignKeys(model)

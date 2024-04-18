@@ -26,7 +26,7 @@ func ddlDefault(col *linq.Column) string {
 	case linq.DefBool:
 		result = `0` // 0 is false and 1 is true
 	case linq.DefNow:
-		result = `date('now')`
+		result = `CURRENT_TIMESTAMP`
 	case linq.DefJson:
 		result = `'{}'`
 	case linq.DefArray:
@@ -35,12 +35,14 @@ func ddlDefault(col *linq.Column) string {
 		result = `'{}'`
 	case linq.DefSerie:
 		result = `0`
+	case linq.DefNil:
+		result = `NULL`
 	default:
 		val := col.Default.Value()
 		result = strs.Format(`%v`, et.Unquote(val))
 	}
 
-	return strs.Append("DEFAULT", result, " ")
+	return strs.Format("DEFAULT %v", result)
 }
 
 // Sqlite type ddl
@@ -59,7 +61,7 @@ func ddlType(col *linq.Column) string {
 	case linq.TpDateTime:
 		return "TEXT"
 	case linq.TpTimeStamp:
-		return "TEXT"
+		return "TIMESTAMP"
 	case linq.TpJson:
 		return "TEXT"
 	case linq.TpArray:
@@ -90,12 +92,18 @@ func ddlColumn(col *linq.Column) string {
 
 // Sqlite index ddl
 func ddlIndex(col *linq.Column) string {
-	return strs.Format(`CREATE INDEX IF NOT EXISTS %v_%v_IDX ON %v(%v);`, strs.Uppcase(col.Table()), col.Up(), strs.Uppcase(col.Table()), col.Up())
+	name := strs.Format(`%v_%v_IDX`, strs.Uppcase(col.Table()), col.Up())
+	name = strs.Replace(name, "-", "_")
+	name = strs.Replace(name, ".", "_")
+	return strs.Format(`CREATE INDEX IF NOT EXISTS %v ON %v(%v);`, name, strs.Uppcase(col.Table()), col.Up())
 }
 
 // Sqlite unique index ddl
 func ddlUnique(col *linq.Column) string {
-	return strs.Format(`CREATE UNIQUE INDEX IF NOT EXISTS %v_%v_IDX ON %v(%v);`, strs.Uppcase(col.Table()), col.Up(), strs.Uppcase(col.Table()), col.Up())
+	name := strs.Format(`%v_%v_IDX`, strs.Uppcase(col.Table()), col.Up())
+	name = strs.Replace(name, "-", "_")
+	name = strs.Replace(name, ".", "_")
+	return strs.Format(`CREATE UNIQUE INDEX IF NOT EXISTS %v ON %v(%v);`, name, strs.Uppcase(col.Table()), col.Up())
 }
 
 // Sqlite primary key ddl
@@ -129,7 +137,9 @@ func ddlTable(model *linq.Model) string {
 		if col.TypeColumn == linq.TpColumn {
 			def := ddlColumn(col)
 			columns = strs.Append(def, columns, ",\n")
-			if col.Unique {
+			if col.PrimaryKey {
+				continue
+			} else if col.Unique {
 				def = ddlUnique(col)
 				indexs = strs.Append(def, indexs, "\n")
 			} else if col.Indexed {
@@ -140,7 +150,7 @@ func ddlTable(model *linq.Model) string {
 	}
 	foreign := ddlForeignKeys(model)
 	columns = strs.Append(columns, foreign, ",\n")
-	table := strs.Format(`CREATE TABLE IF NOT EXISTS %s (%s);`, model.Table, columns)
+	table := strs.Format("CREATE TABLE IF NOT EXISTS %s (\n%s);", model.Table, columns)
 	result = strs.Append(result, table, "\n")
 	result = strs.Append(result, indexs, "\n")
 

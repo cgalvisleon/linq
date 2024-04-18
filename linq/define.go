@@ -28,22 +28,15 @@ func (m *Model) DefineAtrib(name, description string, typeData TypeData, _defaul
 }
 
 // Define index in the model
-func (m *Model) DefineIndex(cols []string) *Model {
-	for _, v := range cols {
-		m.AddIndex(v, true)
-	}
+func (m *Model) DefineIndex(name string, asc bool) *Model {
+	m.AddIndex(name, asc)
 
 	return m
 }
 
 // Define unique index in the model
-func (m *Model) DefineUnique(cols []string) *Model {
-	for _, v := range cols {
-		col := m.AddIndex(v, true)
-		if col != nil {
-			col.Unique = true
-		}
-	}
+func (m *Model) DefineUnique(name string, asc bool) *Model {
+	m.AddUnique(name, asc)
 
 	return m
 }
@@ -88,6 +81,7 @@ func (m *Model) DefineForeignKey(foreignKey []string, parentModel *Model, parent
 	}
 	fkey := strs.Replace(m.Table, ".", "_")
 	fkey = strs.Replace(fkey, "-", "_") + "_" + strings.Join(foreignKey, "_") + "_fkey"
+	fkey = strs.Replace(fkey, "-", "_")
 	fkey = strs.Lowcase(fkey)
 	description := strs.Format(`Foreign key to %s(%s)`, parentModel.Table, strings.Join(parentKey, ", "))
 	m.AddForeignKey(fkey, description, foreignKey, parentModel, parentKey)

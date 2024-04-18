@@ -75,6 +75,12 @@ func MOdel(def *Definition) *Model {
 	for _, col := range def.Atribs {
 		result.DefineAtrib(col.Name, col.Description, col.TypeData, col.DefValue)
 	}
+	for _, idx := range def.Indexes {
+		result.DefineIndex(idx, true)
+	}
+	for _, uni := range def.Uniques {
+		result.DefineUnique(uni, true)
+	}
 	result.DefinePrimaryKey(def.PrimaryKey)
 	for _, fk := range def.ForeignKey {
 		result.DefineForeignKey(fk.ForeignKey, fk.ParentModel, fk.ParentKey)

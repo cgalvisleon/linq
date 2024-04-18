@@ -18,7 +18,7 @@ func main() {
 
 	User := linq.MOdel(&linq.Definition{
 		Schema:      "test",
-		Name:        "User",
+		Name:        "Users",
 		Description: "",
 		Version:     1,
 		Columns: []linq.COl{
@@ -38,7 +38,7 @@ func main() {
 
 	Modelo := linq.MOdel(&linq.Definition{
 		Schema:      "test",
-		Name:        "Model",
+		Name:        "Models",
 		Description: "",
 		Version:     1,
 		Columns: []linq.COl{
