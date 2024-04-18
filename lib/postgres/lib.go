@@ -354,3 +354,9 @@ func (d *Postgres) DCL(command string, params et.Json) error {
 		return nil
 	}
 }
+
+// MutationSql return the sql to mutate tables
+func (d *Postgres) MutationSql(l *linq.Linq) string {
+
+	return ""
+}

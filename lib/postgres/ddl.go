@@ -8,7 +8,10 @@ import (
 	"github.com/cgalvisleon/linq/linq"
 )
 
-// Postgres funcitions ddl to support a models
+// DDL Data Definition Language
+// This package contains the functions to definition data elements in the database
+
+// ddlFuntions return sql funcitions ddl to support a models
 func ddlFuntions() string {
 	return `
 	CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -35,36 +38,39 @@ func ddlFuntions() string {
 	`
 }
 
-// Postgres default values
+// ddlDedault return sql default values
 func ddlDefault(col *linq.Column) string {
+	var result string
 	switch col.Default {
 	case linq.DefUuid:
-		return `'-1'`
+		result = `'-1'`
 	case linq.DefInt:
-		return `0`
+		result = `0`
 	case linq.DefInt64:
-		return `0`
+		result = `0`
 	case linq.DefFloat:
-		return `0.0`
+		result = `0.0`
 	case linq.DefBool:
-		return `FALSE`
+		result = `FALSE`
 	case linq.DefNow:
-		return `NOW()`
+		result = `NOW()`
 	case linq.DefJson:
-		return `'{}'`
+		result = `'{}'`
 	case linq.DefArray:
-		return `'[]'`
+		result = `'[]'`
 	case linq.DefObject:
-		return `'{}'`
+		result = `'{}'`
 	case linq.DefSerie:
-		return `0`
+		result = `0`
 	default:
 		val := col.Default.Value()
-		return strs.Format(`%v`, et.Unquote(val))
+		result = strs.Format(`%v`, et.Unquote(val))
 	}
+
+	return strs.Append("DEFAULT", result, " ")
 }
 
-// Postgres type ddl
+// ddlType return sql type ddl
 func ddlType(col *linq.Column) string {
 	switch col.TypeData {
 	case linq.TpUUId:
@@ -94,54 +100,59 @@ func ddlType(col *linq.Column) string {
 	}
 }
 
-// Postgres column ddl
+// ddlschema return sql schema ddl
+func ddlSchema(schema *linq.Schema) string {
+	return strs.Format(`CREATE SCHEMA IF NOT EXISTS %s;`, schema.Name)
+}
+
+// ddlColumn return sql column ddl
 func ddlColumn(col *linq.Column) string {
 	var result string
+	var def string
 
-	def := ddlDefault(col)
-	def = strs.Format(`DEFAULT %s`, def)
-	result = strs.Append(def, result, " ")
-
+	result = ddlDefault(col)
 	def = ddlType(col)
 	result = strs.Append(def, result, " ")
-
 	result = strs.Append(col.Up(), result, " ")
 
 	return result
 }
 
-// Postgres index ddl
+// ddlIndex return sql index ddl
 func ddlIndex(col *linq.Column) string {
-	return strs.Format(`CREATE INDEX IF NOT EXISTS %v_%v_IDX ON %v(%v);`, strs.Uppcase(col.Table()), col.Up(), strs.Uppcase(col.Table()), col.Up())
+	name := strs.Format(`%v_%v_IDX`, strs.Uppcase(col.Table()), col.Up())
+	name = strs.Replace(name, "-", "_")
+	name = strs.Replace(name, ".", "_")
+	return strs.Format(`CREATE INDEX IF NOT EXISTS %v ON %v(%v);`, name, strs.Uppcase(col.Table()), col.Up())
 }
 
-// Postgres unique index ddl
+// ddlUnique return sql unique index ddl
 func ddlUnique(col *linq.Column) string {
 	return strs.Format(`CREATE UNIQUE INDEX IF NOT EXISTS %v_%v_IDX ON %v(%v);`, strs.Uppcase(col.Table()), col.Up(), strs.Uppcase(col.Table()), col.Up())
 }
 
-// Postgres primary key ddl
+// ddlPrimaryKey return sql primary key ddl
 func ddlPrimaryKey(col *linq.Column) string {
 	pkey := strs.Replace(col.Table(), ".", "_")
 	pkey = strs.Replace(pkey, "-", "_") + "_pkey"
 	pkey = strs.Lowcase(pkey)
 	def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s PRIMARY KEY (%s);`, strs.Uppcase(col.Table()), pkey, strings.Join(col.PrimaryKeys(), ", "))
-	return strs.Format(`SELECT core.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, col.Schema.Name, col.Table(), pkey, def)
+	return strs.Format(`SELECT core.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, col.Schema.Name, col.Model.Name, pkey, def)
 }
 
-// Postgres ForeignKey ddl
+// ddlForeignKeys return ForeignKey ddl
 func ddlForeignKeys(model *linq.Model) string {
 	var result string
 	for _, ref := range model.ForeignKey {
 		def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s);`, strs.Uppcase(model.Table), ref.Name, strings.Join(ref.ForeignKey, ", "), ref.ParentModel.Table, strings.Join(ref.ParentKey, ", "))
-		def = strs.Format(`SELECT core.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, model.Schema.Name, model.Table, ref.Name, def)
+		def = strs.Format(`SELECT core.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, model.Schema.Name, model.Name, ref.Name, def)
 		result = strs.Append(result, def, "\n")
 	}
 
 	return result
 }
 
-// Postgres table ddl
+// ddlTable return table ddl
 func ddlTable(model *linq.Model) string {
 	var result string
 	var columns string
@@ -162,12 +173,12 @@ func ddlTable(model *linq.Model) string {
 			}
 		}
 	}
-	foreign := ddlForeignKeys(model)
-
+	schema := ddlSchema(model.Schema)
+	result = strs.Append(result, schema, "\n")
 	table := strs.Format(`CREATE TABLE IF NOT EXISTS %s (%s);`, model.Table, columns)
-
 	result = strs.Append(result, table, "\n")
 	result = strs.Append(result, indexs, "\n")
+	foreign := ddlForeignKeys(model)
 	result = strs.Append(result, foreign, "\n")
 
 	return result

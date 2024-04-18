@@ -46,6 +46,16 @@ type Constraint struct {
 	ParentKey   []string
 }
 
+func (c *Constraint) Definition() et.Json {
+	return et.Json{
+		"name":        c.Name,
+		"description": c.Description,
+		"foreignKey":  c.ForeignKey,
+		"parentModel": c.ParentModel.Name,
+		"parentKey":   c.ParentKey,
+	}
+}
+
 // Index is a struct for index
 type Index struct {
 	Column *Column
@@ -154,6 +164,16 @@ func (m *Model) Definition() et.Json {
 		columns = append(columns, v.Definition())
 	}
 
+	var primaryKeys []string = []string{}
+	for _, v := range m.PrimaryKeys {
+		primaryKeys = append(primaryKeys, v.Name)
+	}
+
+	var foreignKey []et.Json = []et.Json{}
+	for _, v := range m.ForeignKey {
+		foreignKey = append(foreignKey, v.Definition())
+	}
+
 	var index []et.Json = []et.Json{}
 	for _, v := range m.Index {
 		index = append(index, v.Describe())
@@ -164,8 +184,8 @@ func (m *Model) Definition() et.Json {
 		"description": m.Description,
 		"table":       m.Table,
 		"columns":     columns,
-		"primaryKeys": m.PrimaryKeys,
-		"foreignKey":  m.ForeignKey,
+		"primaryKeys": primaryKeys,
+		"foreignKey":  foreignKey,
 		"index":       index,
 	}
 

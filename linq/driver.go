@@ -41,5 +41,6 @@ type Driver interface {
 	InsertSql(linq *Linq) string
 	UpdateSql(linq *Linq) string
 	DeleteSql(linq *Linq) string
+	MutationSql(linq *Linq) string
 	DCL(command string, params et.Json) error
 }

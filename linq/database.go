@@ -13,10 +13,11 @@ type Database struct {
 	Name        string
 	Description string
 	DB          *sql.DB
-	Driver      Driver
+	Driver      *Driver
 	SourceField string
 	Schemes     []*Schema
 	Models      []*Model
+	debug       bool
 }
 
 // NewDatabase create a new database
@@ -30,7 +31,7 @@ func NewDatabase(name, description string, drive Driver) *Database {
 	result := &Database{
 		Name:        strs.Lowcase(name),
 		Description: description,
-		Driver:      drive,
+		Driver:      &drive,
 		SourceField: "_DATA",
 		Schemes:     []*Schema{},
 		Models:      []*Model{},
@@ -52,14 +53,21 @@ func (d *Database) Definition() et.Json {
 		}
 	}
 
+	driver := *d.Driver
+	typeDriver := driver.Type()
+
 	return et.Json{
 		"name":        d.Name,
 		"description": d.Description,
-		"typeDriver":  d.Driver.Type(),
+		"typeDriver":  typeDriver,
 		"sourceField": d.SourceField,
 		"schemes":     schemes,
 		"models":      models,
 	}
+}
+
+func (d *Database) Debug() {
+	d.debug = true
 }
 
 // AddModel add a model to the database
@@ -82,12 +90,15 @@ func (d *Database) InitModel(model *Model) error {
 		return err
 	}
 
-	logs.Debug(sql)
+	if d.debug {
+		logs.Debug(model.Definition().ToString())
+		logs.Debug(sql)
+	}
 
-	// _, err = d.Query(sql)
-	// if err != nil {
-	// 	return err
-	// }
+	_, err = Query(d.DB, sql)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -135,7 +146,8 @@ func (d *Database) Connected(params et.Json) error {
 	}
 
 	var err error
-	d.DB, err = d.Driver.Connect(params)
+	driver := *d.Driver
+	d.DB, err = driver.Connect(params)
 	if err != nil {
 		return err
 	}
@@ -158,7 +170,8 @@ func (d *Database) ddlSql(model *Model) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.DdlSql(model), nil
+	driver := *d.Driver
+	return driver.DdlSql(model), nil
 }
 
 // SelectSql return the sql to select
@@ -167,7 +180,8 @@ func (d *Database) selectSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.SelectSql(linq), nil
+	driver := *d.Driver
+	return driver.SelectSql(linq), nil
 }
 
 // CurrentSql return the sql to current
@@ -176,7 +190,8 @@ func (d *Database) currentSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.CurrentSql(linq), nil
+	driver := *d.Driver
+	return driver.CurrentSql(linq), nil
 }
 
 // InsertSql return the sql to insert
@@ -185,7 +200,8 @@ func (d *Database) insertSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.InsertSql(linq), nil
+	driver := *d.Driver
+	return driver.InsertSql(linq), nil
 }
 
 // UpdateSql return the sql to update
@@ -194,7 +210,8 @@ func (d *Database) updateSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.UpdateSql(linq), nil
+	driver := *d.Driver
+	return driver.UpdateSql(linq), nil
 }
 
 // DeleteSql return the sql to delete
@@ -203,5 +220,6 @@ func (d *Database) deleteSql(linq *Linq) (string, error) {
 		return "", logs.Errorm("Driver is required")
 	}
 
-	return d.Driver.DeleteSql(linq), nil
+	driver := *d.Driver
+	return driver.DeleteSql(linq), nil
 }

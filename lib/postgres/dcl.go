@@ -9,6 +9,9 @@ import (
 	"github.com/cgalvisleon/linq/linq"
 )
 
+// DCL Data Control Language
+// This package contains the functions to manage the database
+
 // ExistDatabase check if the database exists
 func ExistDatabase(db *sql.DB, name string) (bool, error) {
 	name = strs.Lowcase(name)

@@ -45,9 +45,7 @@ func query(db *sql.DB, sql string, args ...any) (*sql.Rows, error) {
 		return nil, logs.Alertm("Database is required")
 	}
 
-	parse := SQLParse(sql, args...)
-	sql = SQLParse(parse)
-	rows, err := db.Query(sql)
+	rows, err := db.Query(sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +53,6 @@ func query(db *sql.DB, sql string, args ...any) (*sql.Rows, error) {
 	return rows, nil
 }
 
-// Query execute a query in the database
 func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	rows, err := query(db, sql, args...)
 	if err != nil {
@@ -68,8 +65,50 @@ func Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
 	return items, nil
 }
 
-// QueryOne execute a query in the database and return one item
 func QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
+	items, err := Query(db, sql, args...)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if items.Count == 0 {
+		return et.Item{
+			Ok:     false,
+			Result: et.Json{},
+		}, nil
+	}
+
+	return et.Item{
+		Ok:     items.Ok,
+		Result: items.Result[0],
+	}, nil
+}
+
+// Query execute a query in the database
+func (d *Database) Query(db *sql.DB, sql string, args ...any) (et.Items, error) {
+	_query := SQLParse(sql, args...)
+
+	if d.debug {
+		logs.Debug(et.Json{
+			"sql":   query,
+			"args":  args,
+			"query": _query,
+		}.ToString())
+	}
+
+	rows, err := query(db, _query)
+	if err != nil {
+		return et.Items{}, err
+	}
+	defer rows.Close()
+
+	items := RowsItems(rows)
+
+	return items, nil
+}
+
+// QueryOne execute a query in the database and return one item
+func (d *Database) QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error) {
 	items, err := Query(db, sql, args...)
 	if err != nil {
 		return et.Item{}, err
@@ -98,16 +137,22 @@ func (l *Linq) query(sql string, args ...any) (et.Items, error) {
 		return et.Items{}, logs.Errorm("Sql is required")
 	}
 
+	_query := SQLParse(sql, args...)
 	if l.debug {
 		logs.Debug(l.Definition().ToString())
-		logs.Debug(sql)
+		logs.Debug(et.Json{
+			"sql":   query,
+			"args":  args,
+			"query": _query,
+		}.ToString())
+
 	}
 
 	if !l.ItIsBuilt {
 		return et.Items{}, logs.Alertm("Linq not built")
 	}
 
-	rows, err := query(l.Db.DB, sql, args...)
+	rows, err := query(l.Db.DB, _query)
 	if err != nil {
 		return et.Items{}, logs.Error(err)
 	}

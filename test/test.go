@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-	drive := lib.NewPostgres("localhost", 5432, "test")
+	// drive := lib.DrivePostgres("localhost", 5432, "test")
+	drive := lib.DriveSqlite("test.db")
 	db := linq.NewDatabase("database", "description", &drive)
 	db.Connected(et.Json{
 		"user":     "test",
@@ -53,39 +54,38 @@ func main() {
 		},
 	})
 
-	if db.InitModel(User) != nil {
-		logs.Errorm("Error")
+	db.Debug()
+	if err := db.InitModel(User); err != nil {
+		logs.Fatal(err.Error())
 	}
 
-	if db.InitModel(Modelo) != nil {
-		logs.Errorm("Error")
+	if err := db.InitModel(Modelo); err != nil {
+		logs.Fatal(err.Error())
 	}
 
-	/*
-		A := User
-		B := Modelo
-		_ = linq.From(A).
-			Join(A, B, A.C("_id").Eq(B.C("user_id"))).
-			Where(A.C("username").Eq("test")).
-			And(A.C("password").Eq("test")).
-			GroupBy(A.C("username"), A.C("password")).
-			OrderBy(A.C("username")).
-			Desc(A.C("password")).
-			Select().
-			Debug()
-			// First().
-			// Page(1, 10)
+	A := User
+	B := Modelo
+	_ = linq.From(A).
+		Join(A, B, A.C("_id").Eq(B.C("user_id"))).
+		Where(A.C("username").Eq("test")).
+		And(A.C("password").Eq("test")).
+		GroupBy(A.C("username"), A.C("password")).
+		OrderBy(A.C("username")).
+		Desc(A.C("password")).
+		Select().
+		Debug()
+		// First().
+		// Page(1, 10)
 
-		_, _ = A.
-			Insert(et.Json{
-				"username": "test",
-				"password": "test",
-				"name":     "test",
-			}).
-			Debug().
-			Exec()
+	_, _ = A.
+		Insert(et.Json{
+			"username": "test",
+			"password": "test",
+			"name":     "test",
+		}).
+		Debug().
+		Exec()
 
-	*/
 	// logs.Debug(A.Definition().ToString())
 	// logs.Debug(B.Definition().ToString())
 	// logs.Debug(l.Definition().ToString())
