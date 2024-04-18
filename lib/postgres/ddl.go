@@ -11,14 +11,313 @@ import (
 // DDL Data Definition Language
 // This package contains the functions to definition data elements in the database
 
+// ddlListen return sql used listen ddl
+func ddlListen() string {
+	return `
+	CREATE OR REPLACE FUNCTION SYNC_INSERT()
+  RETURNS
+    TRIGGER AS $$
+  DECLARE
+   CHANNEL VARCHAR(250);
+  BEGIN
+    IF NEW._IDT = '-1' THEN
+      NEW._IDT = uuid_generate_v4();
+		END IF;
+
+		CHANNEL = TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME;
+		PERFORM pg_notify(
+		CHANNEL,
+		json_build_object(
+			'option', TG_OP,
+			'_idt', NEW._IDT
+		)::text
+		);
+    
+  RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE OR REPLACE FUNCTION SYNC_UPDATE()
+  RETURNS
+    TRIGGER AS $$
+  DECLARE
+    CHANNEL VARCHAR(250);
+  BEGIN
+    IF NEW._IDT = '-1' THEN
+			NEW._IDT = uuid_generate_v4();    
+    END IF;
+    
+		CHANNEL = TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME;
+		PERFORM pg_notify(
+		CHANNEL,
+		json_build_object(
+			'option', TG_OP,
+			'_idt', NEW._IDT  
+		)::text
+		);
+
+  RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE OR REPLACE FUNCTION SYNC_DELETE()
+  RETURNS
+    TRIGGER AS $$
+  DECLARE
+    CHANNEL VARCHAR(250);
+  BEGIN
+		CHANNEL = TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME;
+		PERFORM pg_notify(
+		CHANNEL,
+		json_build_object(
+			'option', TG_OP,
+			'_idt', OLD._IDT
+		)::text
+		);
+
+  RETURN OLD;
+  END;
+  $$ LANGUAGE plpgsql;
+	`
+}
+
+// ddlSync return sql sync ddl
+func ddlSync() string {
+	return `
+  -- DROP TABLE IF EXISTS SYNCS CASCADE;
+
+  CREATE TABLE IF NOT EXISTS SYNCS(
+    DATE_MAKE TIMESTAMP DEFAULT NOW(),
+    DATE_UPDATE TIMESTAMP DEFAULT NOW(),
+    TABLE_SCHEMA VARCHAR(80) DEFAULT '',
+    TABLE_NAME VARCHAR(80) DEFAULT '',
+    _IDT VARCHAR(80) DEFAULT '-1',
+    ACTION VARCHAR(80) DEFAULT '',
+    _ID VARCHAR(80) DEFAULT '-1',
+    _SYNC BOOLEAN DEFAULT FALSE,    
+    INDEX SERIAL,
+    PRIMARY KEY (TABLE_SCHEMA, TABLE_NAME, _IDT)
+  );  
+  CREATE INDEX IF NOT EXISTS SYNCS_INDEX_IDX ON SYNCS(INDEX);
+  CREATE INDEX IF NOT EXISTS SYNCS_TABLE_SCHEMA_IDX ON SYNCS(TABLE_SCHEMA);
+  CREATE INDEX IF NOT EXISTS SYNCS_TABLE_NAME_IDX ON SYNCS(TABLE_NAME);
+  CREATE INDEX IF NOT EXISTS SYNCS__IDT_IDX ON SYNCS(_IDT);
+  CREATE INDEX IF NOT EXISTS SYNCS_ACTION_IDX ON SYNCS(ACTION);
+  CREATE INDEX IF NOT EXISTS SYNCS__ID_IDX ON SYNCS(_ID);
+  CREATE INDEX IF NOT EXISTS SYNCS__SYNC_IDX ON SYNCS(_SYNC);
+
+  CREATE OR REPLACE FUNCTION SYNC_INSERT()
+  RETURNS
+    TRIGGER AS $$
+  DECLARE
+   CHANNEL VARCHAR(250);
+  BEGIN
+    IF NEW._IDT = '-1' THEN
+      NEW._IDT = uuid_generate_v4();
+
+      INSERT INTO SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
+      VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP, uuid_generate_v4());
+
+      PERFORM pg_notify(
+      'sync',
+      json_build_object(
+        'option', TG_OP,        
+        '_idt', NEW._IDT
+      )::text
+      );
+
+      CHANNEL = TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME;
+      PERFORM pg_notify(
+      CHANNEL,
+      json_build_object(
+        'option', TG_OP,
+        '_idt', NEW._IDT
+      )::text
+      );
+    END IF;
+
+  RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE OR REPLACE FUNCTION SYNC_UPDATE()
+  RETURNS
+    TRIGGER AS $$
+  DECLARE
+    CHANNEL VARCHAR(250);
+  BEGIN
+    IF NEW._IDT = '-1' AND OLD._IDT != '-1' THEN
+      NEW._IDT = OLD._IDT;
+    ELSE
+     IF NEW._IDT = '-1' THEN
+       NEW._IDT = uuid_generate_v4();
+     END IF;
+     INSERT INTO SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
+     VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP, uuid_generate_v4())
+		 ON CONFLICT(TABLE_SCHEMA, TABLE_NAME, _IDT) DO UPDATE SET
+     DATE_UPDATE = NOW(),
+     ACTION = TG_OP,
+     _SYNC = FALSE,
+     _ID = uuid_generate_v4();
+
+     PERFORM pg_notify(
+     'sync',
+     json_build_object(
+       'option', TG_OP,
+       '_idt', NEW._IDT
+     )::text
+     );
+
+     CHANNEL = TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME;
+     PERFORM pg_notify(
+     CHANNEL,
+     json_build_object(
+       'option', TG_OP,
+       '_idt', NEW._IDT  
+     )::text
+     );
+    END IF; 
+
+  RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE OR REPLACE FUNCTION SYNC_DELETE()
+  RETURNS
+    TRIGGER AS $$
+  DECLARE
+    VINDEX INTEGER;
+    CHANNEL VARCHAR(250);
+  BEGIN
+    SELECT INDEX INTO VINDEX
+    FROM SYNCS
+    WHERE TABLE_SCHEMA = TG_TABLE_SCHEMA
+    AND TABLE_NAME = TG_TABLE_NAME
+    AND _IDT = OLD._IDT
+    LIMIT 1;
+    IF FOUND THEN
+      UPDATE SYNCS SET
+      DATE_UPDATE = NOW(),
+      ACTION = TG_OP,
+      _SYNC = FALSE,
+      _ID = uuid_generate_v4()
+      WHERE INDEX = VINDEX;
+      
+      PERFORM pg_notify(
+      'sync',
+      json_build_object(
+        'option', TG_OP,
+        '_idt', OLD._IDT
+      )::text
+      );
+
+      CHANNEL = TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME;
+      PERFORM pg_notify(
+      CHANNEL,
+      json_build_object(
+        'option', TG_OP,
+        '_idt', OLD._IDT
+      )::text
+      );      
+    END IF;
+
+  RETURN OLD;
+  END;
+  $$ LANGUAGE plpgsql;
+	`
+}
+
+// ddlRecicling return sql recicling ddl
+func ddlRecicling() string {
+	return `
+	-- DROP TABLE IF EXISTS RECYCLING CASCADE;
+
+  CREATE TABLE IF NOT EXISTS RECYCLING(
+		TABLE_SCHEMA VARCHAR(80) DEFAULT '',
+    TABLE_NAME VARCHAR(80) DEFAULT '',
+    _IDT VARCHAR(80) DEFAULT '-1',
+    INDEX SERIAL,
+		PRIMARY KEY(TABLE_SCHEMA, TABLE_NAME, _IDT)
+	);
+  CREATE INDEX IF NOT EXISTS RECYCLING_INDEX_IDX ON RECYCLING(INDEX);
+	CREATE INDEX IF NOT EXISTS RECYCLING_TABLE_SCHEMA_IDX ON RECYCLING(TABLE_SCHEMA);
+	CREATE INDEX IF NOT EXISTS RECYCLING_TABLE_NAME_IDX ON RECYCLING(TABLE_NAME);
+	CREATE INDEX IF NOT EXISTS RECYCLING__IDT_IDX ON RECYCLING(INDEX);
+
+	CREATE OR REPLACE FUNCTION RECYCLING()
+  RETURNS
+    TRIGGER AS $$
+  BEGIN
+		IF NEW._STATE != OLD._STATE AND NEW._STATE = '-2' THEN
+    	INSERT INTO RECYCLING(TABLE_SCHEMA, TABLE_NAME, _IDT)
+    	VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT);
+
+      PERFORM pg_notify(
+      'recycling',
+      json_build_object(
+        '_idt', NEW._IDT
+      )::text
+      );
+		ELSEIF NEW._STATE != OLD._STATE AND OLD._STATE = '-2' THEN
+			DELETE FROM RECYCLING WHERE _IDT=NEW._IDT;
+    END IF;
+
+  RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+	CREATE OR REPLACE FUNCTION ERASE()
+  RETURNS
+    TRIGGER AS $$
+  BEGIN
+		DELETE FROM RECYCLING WHERE _IDT=OLD._IDT;
+  	RETURN OLD;
+  END;
+  $$ LANGUAGE plpgsql;
+	`
+}
+
+func ddlStrucs() string {
+	return `
+	-- DROP TABLE IF EXISTS STRUCTS CASCADE;
+
+  CREATE TABLE IF NOT EXISTS STRUCTS(
+		TABLE_SCHEMA VARCHAR(80) DEFAULT '',
+    TABLE_NAME VARCHAR(80) DEFAULT '',
+    SQL TEXT DEFAULT '',
+    INDEX SERIAL,
+		PRIMARY KEY(TABLE_SCHEMA, TABLE_NAME)
+	);
+  CREATE INDEX IF NOT EXISTS STRUCTS_INDEX_IDX ON STRUCTS(INDEX);
+	CREATE INDEX IF NOT EXISTS STRUCTS_SCHEMA_IDX ON STRUCTS(TABLE_SCHEMA);
+	CREATE INDEX IF NOT EXISTS STRUCTS_NAME_IDX ON STRUCTS(TABLE_NAME);
+
+	CREATE OR REPLACE FUNCTION setstruct(
+	VSCHEMA VARCHAR(80),
+	VNAME VARCHAR(80),
+	VSQL TEXT)
+	RETURNS INT AS $$
+	DECLARE
+	 result INT;
+	BEGIN
+	 INSERT INTO STRUCTS AS A (TABLE_SCHEMA, TABLE_NAME, SQL)
+	 SELECT VSCHEMA, VNAME, VSQL
+	 ON CONFLICT (TABLE_SCHEMA, TABLE_NAME) DO UPDATE SET
+	 SQL = VSQL
+	 RETURNING INDEX INTO result;
+
+	 RETURN COALESCE(result, 0);
+	END;
+	$$ LANGUAGE plpgsql;
+	`
+}
+
 // ddlFuntions return sql funcitions ddl to support a models
 func ddlFuntions() string {
 	return `
 	CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 	
-	CREATE SCHEMA IF NOT EXISTS "core";
-
-	CREATE OR REPLACE FUNCTION core.create_constraint_if_not_exists(
+	CREATE OR REPLACE FUNCTION create_constraint_if_not_exists(
 	s_name text,
 	t_name text,
 	c_name text,
@@ -140,7 +439,7 @@ func ddlPrimaryKey(col *linq.Column) string {
 	pkey = strs.Replace(pkey, "-", "_") + "_pkey"
 	pkey = strs.Lowcase(pkey)
 	def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s PRIMARY KEY (%s);`, strs.Uppcase(col.Table()), pkey, strings.Join(col.PrimaryKeys(), ", "))
-	return strs.Format(`SELECT core.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, col.Schema.Name, col.Model.Name, pkey, def)
+	return strs.Format(`SELECT create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, col.Schema.Name, col.Model.Name, pkey, def)
 }
 
 // ddlForeignKeys return ForeignKey ddl
@@ -148,7 +447,7 @@ func ddlForeignKeys(model *linq.Model) string {
 	var result string
 	for _, ref := range model.ForeignKey {
 		def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s);`, strs.Uppcase(model.Table), ref.Name, strings.Join(ref.ForeignKey, ", "), ref.ParentModel.Table, strings.Join(ref.ParentKey, ", "))
-		def = strs.Format(`SELECT core.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, model.Schema.Name, model.Name, ref.Name, def)
+		def = strs.Format(`SELECT create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, model.Schema.Name, model.Name, ref.Name, def)
 		result = strs.Append(result, def, "\n")
 	}
 

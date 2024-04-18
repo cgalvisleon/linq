@@ -46,6 +46,30 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 
 	d.DB = result
 
+	sql := ddlSync()
+	_, err = d.DB.Exec(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	sql = ddlRecicling()
+	_, err = d.DB.Exec(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	sql = ddlStrucs()
+	_, err = d.DB.Exec(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	sql = ddlFuntions()
+	_, err = d.DB.Exec(sql)
+	if err != nil {
+		return nil, err
+	}
+
 	logs.Infof("Connected to %s database %s", driver, d.Database)
 
 	return d.DB, nil
