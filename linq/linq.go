@@ -5,10 +5,13 @@ import (
 	"github.com/cgalvisleon/et/strs"
 )
 
+// Global variables
 var (
-	dbs     []*Database
-	schemas []*Schema
-	models  []*Model
+	IdTField    = "_IDT"
+	SourceField = "_DATA"
+	dbs         []*Database
+	schemas     []*Schema
+	models      []*Model
 )
 
 // Define type columns in linq

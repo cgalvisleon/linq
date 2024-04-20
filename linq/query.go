@@ -12,7 +12,7 @@ type TypeQuery int
 
 // Values for TypeQuery
 const (
-	TpSelect TypeQuery = iota
+	TpQuery TypeQuery = iota
 	TpCommand
 	TpAll
 	TpLast
@@ -23,7 +23,7 @@ const (
 // String method to use in linq
 func (d TypeQuery) String() string {
 	switch d {
-	case TpSelect:
+	case TpQuery:
 		return "select"
 	case TpCommand:
 		return "command"

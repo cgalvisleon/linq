@@ -32,7 +32,6 @@ func NewDatabase(name, description string, drive Driver) *Database {
 		Name:        strs.Lowcase(name),
 		Description: description,
 		Driver:      &drive,
-		SourceField: "_DATA",
 		Schemes:     []*Schema{},
 		Models:      []*Model{},
 	}
@@ -44,13 +43,14 @@ func NewDatabase(name, description string, drive Driver) *Database {
 
 // Definition return a json with the definition of the database
 func (d *Database) Definition() et.Json {
-	var schemes []et.Json = []et.Json{}
-	var models []et.Json = []et.Json{}
+	var _schemes []et.Json = []et.Json{}
 	for _, s := range d.Schemes {
-		schemes = append(schemes, s.Definition())
-		for _, m := range s.Models {
-			models = append(models, m.Definition())
-		}
+		_schemes = append(_schemes, s.Definition())
+	}
+
+	var _models []et.Json = []et.Json{}
+	for _, m := range d.Models {
+		_models = append(_models, m.Definition())
 	}
 
 	driver := *d.Driver
@@ -60,9 +60,9 @@ func (d *Database) Definition() et.Json {
 		"name":        d.Name,
 		"description": d.Description,
 		"typeDriver":  typeDriver,
-		"sourceField": d.SourceField,
-		"schemes":     schemes,
-		"models":      models,
+		"sourceField": SourceField,
+		"schemes":     _schemes,
+		"models":      _models,
 	}
 }
 
@@ -83,7 +83,6 @@ func (d *Database) InitModel(model *Model) error {
 	}
 
 	model.SetDb(d)
-	model.SetSourceField(d.SourceField)
 
 	sql, err := d.ddlSql(model)
 	if err != nil {
@@ -112,6 +111,7 @@ func (d *Database) GetSchema(val *Schema) *Schema {
 	}
 
 	d.Schemes = append(d.Schemes, val)
+	schemas = append(schemas, val)
 
 	return val
 }
@@ -125,6 +125,7 @@ func (d *Database) GetModel(val *Model) *Model {
 	}
 
 	d.Models = append(d.Models, val)
+	models = append(models, val)
 
 	return val
 }

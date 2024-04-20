@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-	// drive := lib.DrivePostgres("localhost", 5432, "test")
-	drive := lib.DriveSqlite("test.db")
+	drive := lib.DrivePostgres("localhost", 5432, "test")
+	// drive := lib.DriveSqlite("test.db")
 	db := linq.NewDatabase("database", "description", &drive)
 	db.Connected(et.Json{
 		"user":     "test",
@@ -24,7 +24,7 @@ func main() {
 		Columns: []linq.COl{
 			{Name: "date_make", Description: "", TypeData: linq.TpTimeStamp, DefValue: linq.DefNow},
 			{Name: "date_update", Description: "", TypeData: linq.TpTimeStamp, DefValue: linq.DefNil},
-			{Name: "_id", Description: "", TypeData: linq.TpUUId, DefValue: linq.DefUuid},
+			{Name: "_id", Description: "", TypeData: linq.TpKey, DefValue: linq.DefUuid},
 			{Name: "username", Description: "", TypeData: linq.TpShortString, DefValue: linq.DefString},
 			{Name: "password", Description: "", TypeData: linq.TpShortString, DefValue: linq.DefString},
 			{Name: "edad", Description: "", TypeData: linq.TpInt, DefValue: linq.DefInt},
@@ -43,10 +43,10 @@ func main() {
 		Version:     1,
 		Columns: []linq.COl{
 			{Name: "date_make", Description: "", TypeData: linq.TpTimeStamp, DefValue: linq.DefNow},
-			{Name: "_id", Description: "", TypeData: linq.TpUUId, DefValue: linq.DefUuid},
+			{Name: "_id", Description: "", TypeData: linq.TpKey, DefValue: linq.DefUuid},
 			{Name: "name", Description: "", TypeData: linq.TpString, DefValue: linq.DefString},
 			{Name: "description", Description: "", TypeData: linq.TpString, DefValue: linq.DefString},
-			{Name: "user_id", Description: "", TypeData: linq.TpUUId, DefValue: linq.DefUuid},
+			{Name: "user_id", Description: "", TypeData: linq.TpKey, DefValue: linq.DefUuid},
 		},
 		PrimaryKey: []string{"_id"},
 		ForeignKey: []linq.FKey{

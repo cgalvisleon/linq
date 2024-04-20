@@ -4,7 +4,7 @@ type COl struct {
 	Name        string
 	Description string
 	TypeData    TypeData
-	DefValue    DefValue
+	DefValue    interface{}
 }
 
 type FKey struct {

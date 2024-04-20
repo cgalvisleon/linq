@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"strings"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
@@ -39,21 +41,33 @@ func (t TypeTrigger) String() string {
 
 // Constraint is a struct for foreign key
 type Constraint struct {
-	Name        string
-	Description string
-	ForeignKey  []string
-	ParentModel *Model
-	ParentKey   []string
+	ForeignKey []string
+	Parent     *Model
+	ParentKey  []string
 }
 
+// Definition return a json with the definition of the constraint
 func (c *Constraint) Definition() et.Json {
 	return et.Json{
-		"name":        c.Name,
-		"description": c.Description,
 		"foreignKey":  c.ForeignKey,
-		"parentModel": c.ParentModel.Name,
+		"parentModel": c.Parent.Name,
 		"parentKey":   c.ParentKey,
 	}
+}
+
+// Name return a valid key name of constraint
+func (c *Constraint) Fkey() string {
+	return strings.Join(c.ForeignKey, "_")
+}
+
+// Name return a valid name of constraint
+func (c *Constraint) Table() string {
+	return c.Parent.Table
+}
+
+// Name return a valid parent key name of constraint
+func (c *Constraint) Pkey() string {
+	return strings.Join(c.ParentKey, "_")
 }
 
 // Index is a struct for index
@@ -77,50 +91,46 @@ type Listener func(data et.Json)
 
 // Model is a struct for models in a schema
 type Model struct {
-	Name            string
-	Description     string
-	Columns         []*Column
-	source          *Column
-	Schema          *Schema
-	Db              *Database
-	Table           string
-	PrimaryKeys     []*Column
-	ForeignKey      []*Constraint
-	Index           []*Index
-	Unique          []*Index
-	Details         []*Column
-	Hidden          []*Column
-	Required        []*Column
-	Source          *Column
-	SourceField     string
-	DateMakeField   string
-	DateUpdateField string
-	IndexField      string
-	StateField      string
-	ProjectField    string
-	IdTField        string
-	UseSource       bool
-	UseDateMake     bool
-	UseDateUpdate   bool
-	UseIndex        bool
-	UseState        bool
-	UseProject      bool
-	BeforeInsert    []Trigger
-	AfterInsert     []Trigger
-	BeforeUpdate    []Trigger
-	AfterUpdate     []Trigger
-	BeforeDelete    []Trigger
-	AfterDelete     []Trigger
-	OnListener      Listener
-	Integrity       bool
-	ItIsBuilt       bool
-	DDL             string
-	Version         int
+	Schema            *Schema
+	Db                *Database
+	Name              string
+	Tag               string
+	Table             string
+	Description       string
+	Columns           []*Column
+	PrimaryKeys       []*Column
+	ForeignKey        []*Constraint
+	Index             []*Index
+	Unique            []*Index
+	RelationTo        []*Column
+	Details           []*Column
+	Hidden            []*Column
+	Required          []*Column
+	Source            *Column
+	UseStatus         bool
+	UseSource         bool
+	UseCreatedTime    bool
+	UseUpdatedTime    bool
+	UseCreatedBy      bool
+	UseLastEditedTime bool
+	UseLastEditedBy   bool
+	UseProject        bool
+	BeforeInsert      []Trigger
+	AfterInsert       []Trigger
+	BeforeUpdate      []Trigger
+	AfterUpdate       []Trigger
+	BeforeDelete      []Trigger
+	AfterDelete       []Trigger
+	OnListener        Listener
+	Integrity         bool
+	ItIsBuilt         bool
+	DDL               string
+	Version           int
 }
 
 // NewModel create a new model
 func NewModel(schema *Schema, name, description string, version int) *Model {
-	table := strs.Append(schema.Name, strs.Uppcase(name), ".")
+	table := strs.Append(schema.Name, nAme(name), ".")
 
 	for _, v := range models {
 		if strs.Uppcase(v.Table) == strs.Uppcase(table) {
@@ -129,32 +139,47 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 	}
 
 	result := &Model{
-		Schema:          schema,
-		Db:              schema.Db,
-		Name:            strs.Uppcase(name),
-		Table:           table,
-		Description:     description,
-		Columns:         []*Column{},
-		PrimaryKeys:     []*Column{},
-		ForeignKey:      []*Constraint{},
-		Index:           []*Index{},
-		Unique:          []*Index{},
-		Details:         []*Column{},
-		Version:         version,
-		SourceField:     schema.SourceField,
-		DateMakeField:   schema.DateMakeField,
-		DateUpdateField: schema.DateUpdateField,
-		IndexField:      schema.IndexField,
-		StateField:      schema.StateField,
-		ProjectField:    schema.ProjectField,
-		IdTField:        schema.IdTField,
+		Schema:            schema,
+		Db:                schema.Db,
+		Name:              nAme(name),
+		Tag:               name,
+		Table:             table,
+		Description:       description,
+		Columns:           []*Column{},
+		PrimaryKeys:       []*Column{},
+		ForeignKey:        []*Constraint{},
+		Index:             []*Index{},
+		Unique:            []*Index{},
+		RelationTo:        []*Column{},
+		Details:           []*Column{},
+		Hidden:            []*Column{},
+		Required:          []*Column{},
+		Source:            nil,
+		UseStatus:         false,
+		UseSource:         false,
+		UseCreatedTime:    false,
+		UseCreatedBy:      false,
+		UseLastEditedTime: false,
+		UseLastEditedBy:   false,
+		UseProject:        false,
+		BeforeInsert:      []Trigger{},
+		AfterInsert:       []Trigger{},
+		BeforeUpdate:      []Trigger{},
+		AfterUpdate:       []Trigger{},
+		BeforeDelete:      []Trigger{},
+		AfterDelete:       []Trigger{},
+		OnListener:        nil,
+		Integrity:         false,
+		ItIsBuilt:         false,
+		DDL:               "",
+		Version:           version,
 	}
 
-	_idT := result.DefineColum(result.IdTField, "_idT of the table", TpUUId, DefUuid)
-	result.AddUniqueColumn(_idT, true)
+	idT := nAme(IdTField)
+	result.DefineColum(idT, "_idT of the table", TpKey, "-1")
+	result.AddUnique(idT, true)
 
 	schema.AddModel(result)
-	models = append(models, result)
 
 	return result
 }
@@ -163,7 +188,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 func (m *Model) Definition() et.Json {
 	var columns []et.Json = []et.Json{}
 	for _, v := range m.Columns {
-		columns = append(columns, v.Definition())
+		columns = append(columns, v.definition())
 	}
 
 	var primaryKeys []string = []string{}
@@ -186,6 +211,11 @@ func (m *Model) Definition() et.Json {
 		unique = append(unique, v.Describe())
 	}
 
+	var relationTo []string = []string{}
+	for _, v := range m.RelationTo {
+		relationTo = append(relationTo, v.Name)
+	}
+
 	result := et.Json{
 		"name":        m.Name,
 		"description": m.Description,
@@ -195,6 +225,7 @@ func (m *Model) Definition() et.Json {
 		"foreignKey":  foreignKey,
 		"index":       index,
 		"unique":      unique,
+		"relationTo":  relationTo,
 	}
 
 	return result
@@ -217,18 +248,6 @@ func (m *Model) SetDb(db *Database) {
 	db.GetModel(m)
 }
 
-// Set source field to model
-func (m *Model) SetSourceField(name string) {
-	col := m.Column(name)
-	if col != nil {
-		col.SourceField = true
-		m.SourceField = name
-		m.UseSource = true
-		m.Source = col
-		m.Schema.SourceField = name
-	}
-}
-
 // Find a column in the model
 func (m *Model) Column(name string) *Column {
 	idx := IndexColumn(m, name)
@@ -240,109 +259,92 @@ func (m *Model) Column(name string) *Column {
 }
 
 // Method short to find a column in the model
-func (m *Model) C(name string) *Column {
-	return m.Column(name)
-}
-
-// Method short to find a column in the model
 func (m *Model) Col(name string) *Column {
 	return m.Column(name)
 }
 
-// Add unique column to the model
-func (m *Model) AddUniqueColumn(col *Column, asc bool) {
-	for _, v := range m.Unique {
-		if v.Column == col {
-			return
-		}
-	}
-
-	col.Unique = true
-	m.Unique = append(m.Unique, &Index{Column: col, Asc: asc})
+// Method short to find a column in the model
+func (m *Model) C(name string) *Column {
+	return m.Column(name)
 }
 
 // Add unique column by name to the model
 func (m *Model) AddUnique(name string, asc bool) *Column {
 	col := COlumn(m, name)
-	if col == nil {
-		return nil
+	if col != nil {
+		col.Unique = true
+		m.Unique = append(m.Unique, &Index{
+			Column: col,
+			Asc:    asc,
+		})
+
+		return col
 	}
 
-	m.AddUniqueColumn(col, asc)
-
-	return col
-}
-
-// Add index column to the model
-func (m *Model) AddIndexColumn(col *Column, asc bool) {
-	for _, v := range m.Index {
-		if v.Column == col {
-			return
-		}
-	}
-
-	col.Indexed = true
-	m.Index = append(m.Index, &Index{Column: col, Asc: asc})
+	return nil
 }
 
 // Add index column by name to the model
 func (m *Model) AddIndex(name string, asc bool) *Column {
 	col := COlumn(m, name)
-	if col == nil {
-		return nil
+	if col != nil {
+		col.Indexed = true
+		m.Index = append(m.Index, &Index{
+			Column: col,
+			Asc:    asc,
+		})
+
+		return col
 	}
 
-	m.AddIndexColumn(col, asc)
-
-	return col
+	return nil
 }
 
 // Add primary key column to the model
-func (m *Model) AddPrimaryKey(name string) {
+func (m *Model) AddPrimaryKey(name string) *Column {
 	col := COlumn(m, name)
-	if col == nil {
-		return
+	if col != nil {
+		col.Unique = true
+		col.PrimaryKey = true
+		m.PrimaryKeys = append(m.PrimaryKeys, col)
+
+		return col
 	}
 
-	for _, v := range m.PrimaryKeys {
-		if v.Up() == strs.Uppcase(name) {
-			return
-		}
-	}
-
-	col.indexed(true)
-	col.Unique = true
-	col.PrimaryKey = true
-	m.PrimaryKeys = append(m.PrimaryKeys, col)
+	return nil
 }
 
 // Add foreign key to the model
-func (m *Model) AddForeignKey(name, description string, foreignKey []string, parentModel *Model, parentKey []string) {
+func (m *Model) AddForeignKey(foreignKey []string, parentModel *Model, parentKey []string) *Constraint {
 	for _, v := range m.ForeignKey {
-		if strs.Uppcase(v.Name) == strs.Uppcase(name) {
-			return
+		if v.Fkey() == strings.Join(foreignKey, "_") {
+			return v
 		}
 	}
 
 	for _, n := range foreignKey {
-		colA := COlumn(m, n)
+		colA := m.AddIndex(n, true)
 		if colA == nil {
-			return
+			return nil
 		}
 
-		colB := COlumn(parentModel, parentKey[0])
-		if colB == nil {
-			return
-		}
-
-		colA.indexed(true)
 		colA.ForeignKey = true
-		colA.AddRefeence(colB)
-
-		colB.indexed(true)
-		colB.PrimaryKey = true
-		colB.AddDependent(colA)
 	}
 
-	m.ForeignKey = append(m.ForeignKey, &Constraint{Name: name, Description: description, ForeignKey: foreignKey, ParentModel: parentModel, ParentKey: parentKey})
+	for _, n := range parentKey {
+		colB := parentModel.AddIndex(n, true)
+		if colB == nil {
+			return nil
+		}
+	}
+
+	result := &Constraint{
+		ForeignKey: foreignKey,
+		Parent:     parentModel,
+		ParentKey:  parentKey,
+	}
+
+	m.ForeignKey = append(m.ForeignKey, result)
+
+	return result
 }

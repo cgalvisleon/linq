@@ -7,21 +7,15 @@ import (
 
 // Schema struct used to define a schema in a database
 type Schema struct {
-	Name            string
-	Description     string
-	Db              *Database
-	Models          []*Model
-	SourceField     string
-	DateMakeField   string
-	DateUpdateField string
-	IndexField      string
-	StateField      string
-	ProjectField    string
-	IdTField        string
+	Name        string
+	Description string
+	Db          *Database
+	Models      []*Model
 }
 
 // NewSchema create a new schema
 func NewSchema(name, description string) *Schema {
+	name = nAme(name)
 	for _, v := range schemas {
 		if v.Up() == strs.Uppcase(name) {
 			return v
@@ -29,16 +23,9 @@ func NewSchema(name, description string) *Schema {
 	}
 
 	result := &Schema{
-		Name:            strs.Lowcase(name),
-		Description:     description,
-		Models:          []*Model{},
-		SourceField:     "_DATA",
-		DateMakeField:   "DATE_MAKE",
-		DateUpdateField: "DATE_UPDATE",
-		IndexField:      "INDEX",
-		StateField:      "_STATE",
-		ProjectField:    "PROJECT_ID",
-		IdTField:        "_IDT",
+		Name:        strs.Lowcase(name),
+		Description: description,
+		Models:      []*Model{},
 	}
 
 	schemas = append(schemas, result)
@@ -48,15 +35,15 @@ func NewSchema(name, description string) *Schema {
 
 // Definition return a json with the definition of the schema
 func (s *Schema) Definition() et.Json {
-	var models []et.Json = []et.Json{}
+	var _models []et.Json = []et.Json{}
 	for _, v := range s.Models {
-		models = append(models, v.Definition())
+		_models = append(_models, v.Definition())
 	}
 
 	return et.Json{
 		"name":        s.Name,
 		"description": s.Description,
-		"models":      models,
+		"models":      _models,
 	}
 }
 
@@ -79,4 +66,5 @@ func (s *Schema) AddModel(model *Model) {
 	}
 
 	s.Models = append(s.Models, model)
+	models = append(models, model)
 }

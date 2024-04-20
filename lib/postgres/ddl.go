@@ -312,6 +312,62 @@ func ddlStrucs() string {
 	`
 }
 
+func ddlSeries() string {
+	return `
+	-- DROP TABLE IF EXISTS SERIES CASCADE;
+
+  CREATE TABLE IF NOT EXISTS SERIES(		
+		SERIE VARCHAR(250) DEFAULT '',
+		VALUE BIGINT DEFAULT 0,
+		PRIMARY KEY(SERIE)
+	);
+	
+	CREATE OR REPLACE FUNCTION nextserie(tag VARCHAR(250))
+	RETURNS BIGINT AS $$
+	DECLARE
+	 result BIGINT;
+	BEGIN
+	 INSERT INTO SERIES AS A (SERIE, VALUE)
+	 SELECT tag, 1
+	 ON CONFLICT (SERIE) DO UPDATE SET
+	 VALUE = A.VALUE + 1
+	 RETURNING VALUE INTO result;
+
+	 RETURN COALESCE(result, 0);
+	END;
+	$$ LANGUAGE plpgsql;
+	
+	CREATE OR REPLACE FUNCTION setserie(tag VARCHAR(250), val BIGINT)
+	RETURNS BIGINT AS $$
+	DECLARE
+	 result BIGINT;
+	BEGIN
+	 INSERT INTO SERIES AS A (SERIE, VALUE)
+	 SELECT tag, val
+	 ON CONFLICT (SERIE) DO UPDATE SET
+	 VALUE = val
+	 WHERE A.VALUE < val
+	 RETURNING VALUE INTO result;
+
+	 RETURN COALESCE(result, 0);
+	END;
+	$$ LANGUAGE plpgsql;
+	
+	CREATE OR REPLACE FUNCTION currserie(tag VARCHAR(250))
+	RETURNS BIGINT AS $$
+	DECLARE
+	 result BIGINT;
+	BEGIN
+	 SELECT VALUE INTO result
+	 FROM SERIES
+	 WHERE SERIE = tag LIMIT 1;
+
+	 RETURN COALESCE(result, 0);
+	END;
+	$$ LANGUAGE plpgsql;
+	`
+}
+
 // ddlFuntions return sql funcitions ddl to support a models
 func ddlFuntions() string {
 	return `
@@ -372,7 +428,7 @@ func ddlDefault(col *linq.Column) string {
 // ddlType return sql type ddl
 func ddlType(col *linq.Column) string {
 	switch col.TypeData {
-	case linq.TpUUId:
+	case linq.TpKey:
 		return "VARCHAR(80)"
 	case linq.TpInt:
 		return "INT"

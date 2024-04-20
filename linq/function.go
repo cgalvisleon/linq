@@ -3,7 +3,7 @@ package linq
 // Count function to use in linq
 func (l *Linq) Count(col *Column) *Linq {
 	sel := l.GetColumn(col)
-	sel.TypeFunction = TpCount
+	sel.TpCaculate = TpCount
 
 	return l
 }
@@ -11,7 +11,7 @@ func (l *Linq) Count(col *Column) *Linq {
 // Sum function to use in linq
 func (l *Linq) Sum(col *Column) *Linq {
 	sel := l.GetColumn(col)
-	sel.TypeFunction = TpSum
+	sel.TpCaculate = TpSum
 
 	return l
 }
@@ -19,7 +19,7 @@ func (l *Linq) Sum(col *Column) *Linq {
 // Avg function to use in linq
 func (l *Linq) Avg(col *Column) *Linq {
 	sel := l.GetColumn(col)
-	sel.TypeFunction = TpAvg
+	sel.TpCaculate = TpAvg
 
 	return l
 }
@@ -27,7 +27,7 @@ func (l *Linq) Avg(col *Column) *Linq {
 // Max function to use in linq
 func (l *Linq) Max(col *Column) *Linq {
 	sel := l.GetColumn(col)
-	sel.TypeFunction = TpMax
+	sel.TpCaculate = TpMax
 
 	return l
 }
@@ -35,7 +35,7 @@ func (l *Linq) Max(col *Column) *Linq {
 // Min function to use in linq
 func (l *Linq) Min(col *Column) *Linq {
 	sel := l.GetColumn(col)
-	sel.TypeFunction = TpMin
+	sel.TpCaculate = TpMin
 
 	return l
 }

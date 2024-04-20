@@ -271,7 +271,7 @@ func sqlOrderBy(l *linq.Linq) {
 
 // Add limit to sql
 func sqlLimit(l *linq.Linq) {
-	if l.TypeQuery != linq.TpSelect {
+	if l.TypeQuery != linq.TpQuery {
 		return
 	}
 

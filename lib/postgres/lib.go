@@ -64,6 +64,12 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 		return nil, err
 	}
 
+	sql = ddlSeries()
+	_, err = d.DB.Exec(sql)
+	if err != nil {
+		return nil, err
+	}
+
 	sql = ddlFuntions()
 	_, err = d.DB.Exec(sql)
 	if err != nil {

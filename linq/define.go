@@ -1,42 +1,40 @@
 package linq
 
 import (
-	"strings"
-
 	"github.com/cgalvisleon/et/strs"
 )
 
 // DefineColumn define a column in the model
-func (m *Model) DefineColum(name, description string, typeData TypeData, _default DefValue) *Column {
-	name = ColName(name)
+func (m *Model) DefineColum(name, description string, typeData TypeData, _default interface{}) *Column {
 	return newColumn(m, name, description, TpColumn, typeData, _default)
 }
 
 // DefineAtrib define a atrib in the model
-func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default DefValue) *Column {
-	source := COlumn(m, m.SourceField)
+func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default interface{}) *Column {
+	source := COlumn(m, SourceField)
 	if source == nil {
-		source = m.DefineColum(m.SourceField, "Source field", TpJson, DefJson)
+		source = m.DefineColum(SourceField, "Source field", TpJson, _default)
 	}
 
-	name = AtribName(name)
 	result := newColumn(m, name, description, TpAtrib, typeData, _default)
-	result.Main = source
-	source.Atribs = append(source.Atribs, result)
 
 	return result
 }
 
 // Define index in the model
-func (m *Model) DefineIndex(name string, asc bool) *Model {
-	m.AddIndex(name, asc)
+func (m *Model) DefineIndex(cols []string, asc bool) *Model {
+	for _, v := range cols {
+		m.AddIndex(v, asc)
+	}
 
 	return m
 }
 
 // Define unique index in the model
-func (m *Model) DefineUnique(name string, asc bool) *Model {
-	m.AddUnique(name, asc)
+func (m *Model) DefineUnique(cols []string, asc bool) *Model {
+	for _, v := range cols {
+		m.AddUnique(v, asc)
+	}
 
 	return m
 }
@@ -79,51 +77,36 @@ func (m *Model) DefineForeignKey(foreignKey []string, parentModel *Model, parent
 	for i, key := range parentKey {
 		parentKey[i] = strs.Uppcase(key)
 	}
-	fkey := strs.Replace(m.Table, ".", "_")
-	fkey = strs.Replace(fkey, "-", "_") + "_" + strings.Join(foreignKey, "_") + "_fkey"
-	fkey = strs.Replace(fkey, "-", "_")
-	fkey = strs.Lowcase(fkey)
-	description := strs.Format(`Foreign key to %s(%s)`, parentModel.Table, strings.Join(parentKey, ", "))
-	m.AddForeignKey(fkey, description, foreignKey, parentModel, parentKey)
+	m.AddForeignKey(foreignKey, parentModel, parentKey)
 
 	return m
 }
 
 // Define reference to object in the model
-func (m *Model) DefineReference(thisKey *Column, name string, otherKey, column *Column, showThisKey bool) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpReference, TpJson, DefObject)
+func (m *Model) DefineRollup(name string, foreignKey []string, parentModel *Model, parentKey []string, _select []string, calculate TpCaculate) *Column {
+	result := newColumn(m, strs.Uppcase(name), "", TpDetail, TpRollup, TpRollup.Default())
 	if result == nil {
 		return nil
 	}
 
-	result.Reference = &Reference{thisKey, name, otherKey, column}
-	thisKey.SetHidden(!showThisKey)
-	thisKey.AddRefeence(otherKey)
-	m.AddIndexColumn(thisKey, true)
-	otherKey.AddDependent(thisKey)
-
-	return result
-}
-
-// Define caption in the model
-func (m *Model) DefineCaption(thisKey *Column, name string, otherKey, column *Column) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpCaption, TpJson, DefString)
-	if result == nil {
-		return nil
+	result.RelationTo = &Relation{
+		ForeignKey: foreignKey,
+		Parent:     parentModel,
+		ParentKey:  parentKey,
+		Select:     _select,
+		Calculate:  calculate,
+		Limit:      1,
 	}
 
-	result.Reference = &Reference{thisKey, name, otherKey, column}
-	thisKey.AddRefeence(otherKey)
-	m.AddIndexColumn(thisKey, true)
-	otherKey.AddDependent(thisKey)
+	m.DefineForeignKey(foreignKey, parentModel, parentKey)
+	m.RelationTo = append(m.RelationTo, result)
 
 	return result
 }
 
 // Define a detail collumn to the model
-func (m *Model) DefineDetail(name, description string, _default any, funcDetail FuncDetail) *Column {
-	result := newColumn(m, name, description, TpDetail, TpAny, DefJson)
-	result.SetHidden(true)
+func (m *Model) DefineDetail(name, description string, _default interface{}, funcDetail FuncDetail) *Column {
+	result := newColumn(m, name, description, TpDetail, TpFunction, _default)
 	result.FuncDetail = funcDetail
 
 	m.Details = append(m.Details, result)
@@ -132,13 +115,9 @@ func (m *Model) DefineDetail(name, description string, _default any, funcDetail 
 }
 
 // Define a sql column to the model
-func (m *Model) DefineSQL(name, sql string) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpSql, TpAny, DefString)
-	if result == nil {
-		return nil
-	}
-
-	result.Sql = sql
+func (m *Model) DefineFormula(name, formula string) *Column {
+	result := m.DefineAtrib(name, "", TpFormula, TpFormula.Default())
+	result.Formula = formula
 
 	return result
 }

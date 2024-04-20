@@ -7,51 +7,23 @@ import (
 	"github.com/cgalvisleon/et/strs"
 )
 
-type TypeFunction int
-
-const (
-	TpNone TypeFunction = iota
-	TpCount
-	TpSum
-	TpAvg
-	TpMax
-	TpMin
-)
-
-func (d TypeFunction) String() string {
-	switch d {
-	case TpCount:
-		return "count"
-	case TpSum:
-		return "sum"
-	case TpAvg:
-		return "avg"
-	case TpMax:
-		return "max"
-	case TpMin:
-		return "min"
-	}
-
-	return ""
-}
-
 // Select struct to use in linq
 type Lselect struct {
-	Linq         *Linq
-	From         *Lfrom
-	Column       *Column
-	AS           string
-	TypeFunction TypeFunction
+	Linq       *Linq
+	From       *Lfrom
+	Column     *Column
+	AS         string
+	TpCaculate TpCaculate
 }
 
 // Definition method to use in linq
 func (l *Lselect) Definition() et.Json {
 	return et.Json{
-		"form":         l.From.Definition(),
-		"column":       l.Column.Name,
-		"type":         l.Column.TypeColumn.String(),
-		"as":           l.AS,
-		"typeFunction": l.TypeFunction.String(),
+		"form":          l.From.Definition(),
+		"column":        l.Column.Name,
+		"type":          l.Column.TypeColumn.String(),
+		"as":            l.AS,
+		"typeCalculate": l.TpCaculate.String(),
 	}
 }
 
@@ -65,7 +37,7 @@ func (l *Lselect) SetAs(name string) *Lselect {
 // As method to use set as name to column in linq
 func (l *Lselect) As() string {
 	if l.Linq.TypeQuery == TpCommand {
-		switch l.TypeFunction {
+		switch l.TpCaculate {
 		case TpCount:
 			def := strs.Format(`%s`, l.AS)
 			return strs.Format(`COUNT(%s)`, def)
@@ -86,7 +58,7 @@ func (l *Lselect) As() string {
 		}
 	}
 
-	switch l.TypeFunction {
+	switch l.TpCaculate {
 	case TpCount:
 		def := strs.Format(`%s.%s`, l.From.AS, l.AS)
 		return strs.Format(`COUNT(%s)`, def)
@@ -121,9 +93,37 @@ func (l *Linq) GetDetail(column *Column) *Lselect {
 	}
 
 	lform := l.GetFrom(column.Model)
-	result := &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
+	result := &Lselect{
+		Linq:       l,
+		From:       lform,
+		Column:     column,
+		AS:         column.Name,
+		TpCaculate: TpShowOriginal,
+	}
 	l.Details.Columns = append(l.Details.Columns, result)
 	l.Details.Used = len(l.Details.Columns) > 0
+
+	return result
+}
+
+func (l *Linq) GetAtrib(column *Column) *Lselect {
+	for _, v := range l.Atribs {
+		if v.Column == column {
+			return v
+		}
+	}
+
+	var result *Lselect
+	l.GetColumn(column.Model.Source)
+	lform := l.GetFrom(column.Model)
+	result = &Lselect{
+		Linq:       l,
+		From:       lform,
+		Column:     column,
+		AS:         column.Name,
+		TpCaculate: TpShowOriginal,
+	}
+	l.Atribs = append(l.Atribs, result)
 
 	return result
 }
@@ -139,28 +139,19 @@ func (l *Linq) GetColumn(column *Column) *Lselect {
 	var result *Lselect
 	if column.TypeColumn == TpDetail {
 		result = l.GetDetail(column)
+	} else if column.TypeColumn == TpAtrib {
+		result = l.GetAtrib(column)
 	} else {
 		lform := l.GetFrom(column.Model)
-		result = &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
-	}
-
-	l.Columns = append(l.Columns, result)
-
-	return result
-}
-
-func (l *Linq) GetAtrib(column *Column) *Lselect {
-	for _, v := range l.Atribs {
-		if v.Column == column {
-			return v
+		result = &Lselect{
+			Linq:       l,
+			From:       lform,
+			Column:     column,
+			AS:         column.Name,
+			TpCaculate: TpShowOriginal,
 		}
 	}
-
-	var result *Lselect
-	l.GetColumn(column.Model.source)
-	lform := l.GetFrom(column.Model)
-	result = &Lselect{Linq: l, From: lform, Column: column, AS: column.Name, TypeFunction: TpNone}
-	l.Atribs = append(l.Atribs, result)
+	l.Columns = append(l.Columns, result)
 
 	return result
 }

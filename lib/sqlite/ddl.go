@@ -48,7 +48,7 @@ func ddlDefault(col *linq.Column) string {
 // Sqlite type ddl
 func ddlType(col *linq.Column) string {
 	switch col.TypeData {
-	case linq.TpUUId:
+	case linq.TpKey:
 		return "TEXT"
 	case linq.TpInt:
 		return "INTEGER"

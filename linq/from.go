@@ -120,7 +120,7 @@ func From(model *Model) *Linq {
 		Joins:     []*Ljoin{},
 		Limit:     0,
 		Offset:    0,
-		TypeQuery: TpSelect,
+		TypeQuery: TpQuery,
 		Sql:       "",
 		Result:    &et.Items{},
 	}
