@@ -22,19 +22,15 @@ func (m *Model) DefineAtrib(name, description string, typeData TypeData, _defaul
 }
 
 // Define index in the model
-func (m *Model) DefineIndex(cols []string, asc bool) *Model {
-	for _, v := range cols {
-		m.AddIndex(v, asc)
-	}
+func (m *Model) DefineIndex(name string, asc bool) *Model {
+	m.AddIndex(name, asc)
 
 	return m
 }
 
 // Define unique index in the model
-func (m *Model) DefineUnique(cols []string, asc bool) *Model {
-	for _, v := range cols {
-		m.AddUnique(v, asc)
-	}
+func (m *Model) DefineUnique(name string, asc bool) *Model {
+	m.AddUnique(name, asc)
 
 	return m
 }

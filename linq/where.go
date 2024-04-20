@@ -82,7 +82,7 @@ func Where(column *Column, operator string, value interface{}) *Lwhere {
 // Where method to use in linq
 func (l *Linq) Where(where *Lwhere) *Linq {
 	where.setLinq(l)
-	l.Wheres = append(l.Wheres, where)
+	l.Wheres = []*Lwhere{where}
 	l.isHaving = false
 
 	return l

@@ -9,6 +9,8 @@ import (
 var (
 	IdTField    = "_IDT"
 	SourceField = "_DATA"
+	MaxUpdate   = 1000
+	MaxDelete   = 1000
 	dbs         []*Database
 	schemas     []*Schema
 	models      []*Model

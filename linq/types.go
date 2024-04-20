@@ -32,6 +32,7 @@ const (
 	TpLastEditedBy
 	TpProject
 	TpJson
+	TpArray
 	TpFunction
 )
 
@@ -83,6 +84,10 @@ func (t TypeData) String() string {
 		return "Project"
 	case TpJson:
 		return "Json"
+	case TpArray:
+		return "Array"
+	case TpFunction:
+		return "Function"
 	}
 	return ""
 }
@@ -148,10 +153,33 @@ func (t TypeData) Default() interface{} {
 		}
 	case TpJson:
 		return et.Json{}
+	case TpArray:
+		return []et.Json{}
 	case TpFunction:
 		return ""
 	}
 	return ""
+}
+
+func (t TypeData) Mutate(val interface{}) {
+	switch val.(type) {
+	case int, int8, int16, int32, int64, float32, float64:
+		t = TpNumber
+	case bool:
+		t = TpCheckbox
+	case et.Json:
+		t = TpJson
+	case *et.Json:
+		t = TpJson
+	case []et.Json:
+		t = TpArray
+	case []*et.Json:
+		t = TpArray
+	case time.Time:
+		t = TpDate
+	default:
+		t = TpText
+	}
 }
 
 func (t TypeData) Definition() *et.Json {

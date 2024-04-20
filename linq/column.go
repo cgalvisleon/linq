@@ -157,7 +157,7 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		model.UseProject = TpProject == TpDate
 	}
 
-	model.Columns = append(model.Columns, result)
+	model.AddColumn(result)
 
 	return result
 }

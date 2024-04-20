@@ -184,6 +184,11 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 	return result
 }
 
+func (m *Model) Save() error {
+
+	return nil
+}
+
 // Definition return a json with the definition of the model
 func (m *Model) Definition() et.Json {
 	var columns []et.Json = []et.Json{}
@@ -268,6 +273,12 @@ func (m *Model) C(name string) *Column {
 	return m.Column(name)
 }
 
+func (m *Model) AddColumn(col *Column) {
+	m.Columns = append(m.Columns, col)
+
+	m.Save()
+}
+
 // Add unique column by name to the model
 func (m *Model) AddUnique(name string, asc bool) *Column {
 	col := COlumn(m, name)
@@ -277,6 +288,7 @@ func (m *Model) AddUnique(name string, asc bool) *Column {
 			Column: col,
 			Asc:    asc,
 		})
+		m.Save()
 
 		return col
 	}
@@ -293,6 +305,7 @@ func (m *Model) AddIndex(name string, asc bool) *Column {
 			Column: col,
 			Asc:    asc,
 		})
+		m.Save()
 
 		return col
 	}
@@ -307,6 +320,7 @@ func (m *Model) AddPrimaryKey(name string) *Column {
 		col.Unique = true
 		col.PrimaryKey = true
 		m.PrimaryKeys = append(m.PrimaryKeys, col)
+		m.Save()
 
 		return col
 	}
@@ -345,6 +359,7 @@ func (m *Model) AddForeignKey(foreignKey []string, parentModel *Model, parentKey
 	}
 
 	m.ForeignKey = append(m.ForeignKey, result)
+	m.Save()
 
 	return result
 }

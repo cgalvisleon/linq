@@ -13,19 +13,13 @@ type FKey struct {
 	ParentKey   []string
 }
 
-type REf struct {
-	ThisKey     *Column
-	Name        string
-	OtherKey    *Column
-	Column      *Column
-	ShowThisKey bool
-}
-
-type ColCap struct {
-	ThisKey  *Column
-	Name     string
-	OtherKey *Column
-	Column   *Column
+type Rol struct {
+	Name       string
+	ForeignKey []string
+	Parent     *Model
+	ParentKey  []string
+	Select     []string
+	Calculate  TpCaculate
 }
 
 type ColDetail struct {
@@ -35,9 +29,14 @@ type ColDetail struct {
 	FuncDetail  FuncDetail
 }
 
-type ColSql struct {
-	Name string
-	Sql  string
+type ColRequired struct {
+	Name    string
+	Message string
+}
+
+type ColFormula struct {
+	Name    string
+	Formula string
 }
 
 type TRigger struct {
@@ -55,14 +54,12 @@ type Definition struct {
 	Indexes     []string
 	Uniques     []string
 	Hidden      []string
+	Required    []ColRequired
 	PrimaryKey  []string
 	ForeignKey  []FKey
-	References  []REf
-	Capactions  []ColCap
+	Rollup      []Rol
 	Details     []ColDetail
-	ColSql      []ColSql
-	ColHidden   []string
-	ColRequired []string
+	Formulas    []ColFormula
 	Trigger     []TRigger
 }
 
@@ -81,25 +78,22 @@ func MOdel(def *Definition) *Model {
 	for _, uni := range def.Uniques {
 		result.DefineUnique(uni, true)
 	}
+	result.DefineHidden(def.Hidden)
+	for _, req := range def.Required {
+		result.DefineRequired(req.Name, req.Message)
+	}
 	result.DefinePrimaryKey(def.PrimaryKey)
 	for _, fk := range def.ForeignKey {
 		result.DefineForeignKey(fk.ForeignKey, fk.ParentModel, fk.ParentKey)
 	}
-	for _, ref := range def.References {
-		result.DefineReference(ref.ThisKey, ref.Name, ref.OtherKey, ref.Column, ref.ShowThisKey)
-	}
-	for _, cap := range def.Capactions {
-		result.DefineCaption(cap.ThisKey, cap.Name, cap.OtherKey, cap.Column)
+	for _, ref := range def.Rollup {
+		result.DefineRollup(ref.Name, ref.ForeignKey, ref.Parent, ref.ParentKey, ref.Select, ref.Calculate)
 	}
 	for _, det := range def.Details {
 		result.DefineDetail(det.Name, det.Description, det.Default, det.FuncDetail)
 	}
-	for _, sql := range def.ColSql {
-		result.DefineSQL(sql.Name, sql.Sql)
-	}
-	result.DefineHidden(def.ColHidden)
-	for _, col := range def.ColRequired {
-		result.DefineRequired(col, "")
+	for _, frm := range def.Formulas {
+		result.DefineFormula(frm.Name, frm.Formula)
 	}
 	for _, trig := range def.Trigger {
 		result.DefineTrigger(trig.TypeTrigger, trig.Trigger)

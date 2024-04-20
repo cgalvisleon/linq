@@ -1,9 +1,8 @@
 package linq
 
 import (
-	"time"
-
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
 )
 
 // TypeCommand struct to use in linq
@@ -67,100 +66,38 @@ func newCommand(from *Lfrom, tp TypeCommand) *Lcommand {
 	}
 }
 
-// Add column to command colums
-func (c *Lcommand) commandColumn(key string, value interface{}) {
-	m := c.From.Model
-	col := m.Col(key)
-
-	if col == nil {
-		if m.UseSource && !m.Integrity {
-			var tp TypeData
-			var _default DefValue
-			switch value.(type) {
-			case int:
-				tp = TpInt
-				_default = DefInt
-			case float64:
-				tp = TpFloat
-				_default = DefFloat
-			case bool:
-				tp = TpBool
-				_default = DefBool
-			case et.Json:
-				tp = TpJson
-				_default = DefJson
-			case *et.Json:
-				tp = TpJson
-				_default = DefJson
-			case []et.Json:
-				tp = TpArray
-				_default = DefArray
-			case []*et.Json:
-				tp = TpArray
-				_default = DefArray
-			case time.Time:
-				tp = TpTimeStamp
-				_default = DefNow
-			default:
-				tp = TpString
-				_default = DefString
-			}
-
-			name := AtribName(key)
-			col = m.DefineAtrib(name, "", tp, _default)
-		} else {
-			return
-		}
-	}
-
-	setNew := func() {
-		if c.New == nil {
-			c.New = &et.Json{}
-		}
-
-		if c.New.Get(key) == nil {
-			c.New.Set(key, value)
-		}
-
-		if c.Source.Get(key) == nil {
-			c.Source.Set(key, value)
-		}
-	}
-
-	setSource := func() {
-		if c.Source == nil {
-			c.Source = &et.Json{}
-		}
-
-		if c.New.Get(key) == nil {
-			c.New.Set(key, value)
-		}
-
-		if c.Source.Get(m.SourceField) == nil {
-			c.Source.Set(m.SourceField, et.Json{
-				key: value,
-			})
-		} else {
-			source := c.Source.Json(m.SourceField)
-			if source.Get(key) == nil {
-				source.Set(key, value)
-				c.Source.Set(m.SourceField, source)
-			}
-		}
-	}
-
-	if col.TypeColumn == TpAtrib {
-		c.Linq.GetAtrib(col)
-		setSource()
+// Add key value to command source
+func (c *Lcommand) setSource(col *Column, value interface{}) {
+	if col.TypeColumn == TpDetail {
 		return
+	}
+
+	if c.Source == nil {
+		c.Source = &et.Json{}
 	}
 
 	if col.TypeColumn == TpColumn {
-		c.Linq.GetColumn(col)
-		if !col.SourceField {
-			setNew()
-		}
-		return
+		value = et.Quote(value)
+		c.Source.Set(col.Low(), value)
+	}
+
+	if col.TypeColumn == TpAtrib {
+		value = et.Quote(value)
+		_data := c.Source.Json(SourceField)
+		_data.Set(col.Low(), value)
+		c.Source.Set(SourceField, _data)
+	}
+}
+
+// Add key value to command new
+func (c *Lcommand) setNew(key string, value interface{}) {
+	if c.New == nil {
+		c.New = &et.Json{}
+	}
+
+	if c.New.Get(key) == nil {
+		value = et.Quote(value)
+		c.New.Set(key, value)
 	}
 }
 
@@ -174,20 +111,58 @@ func (c *Lcommand) consolidate() {
 		return
 	}
 
+	from := c.From
+	model := from.Model
+
+	newAtrib := func(name string, value interface{}) *Column {
+		var tp TypeData
+		tp.Mutate(value)
+
+		return model.DefineAtrib(name, "", tp, tp.Default())
+	}
+
+	properties := make(map[string]bool)
 	if c.TypeCommand == TpInsert {
-		from := c.From
-		for _, col := range from.Model.Columns {
+		for _, col := range model.Columns {
+			if col.TypeColumn == TpDetail {
+				continue
+			}
+
 			key := col.Low()
+			def := col.Default
 			val := c.Data.Get(key)
 			if val == nil {
-				c.commandColumn(key, col.Default.Value())
-			} else {
-				c.commandColumn(key, val)
+				val = def
 			}
+			c.setSource(col, val)
+			c.setNew(key, val)
+			properties[key] = true
+		}
+
+		if model.Integrity {
+			return
+		}
+
+		for k, v := range *c.Data {
+			if properties[k] {
+				continue
+			}
+
+			col := newAtrib(k, v)
+			c.setSource(col, v)
+			c.setNew(k, v)
 		}
 	} else {
 		for k, v := range *c.Data {
-			c.commandColumn(k, v)
+			col := model.Column(k)
+			if col == nil && model.Integrity {
+				continue
+			} else if col == nil {
+				col = newAtrib(k, v)
+			}
+
+			c.setSource(col, v)
+			c.setNew(k, v)
 		}
 	}
 }
@@ -337,32 +312,55 @@ func (c *Lcommand) Update() error {
 		return err
 	}
 
+	if !current.Ok {
+		return nil
+	}
+
+	if current.Count > MaxUpdate {
+		return logs.Errorf("Update only allow %d items", MaxUpdate)
+	}
+
+	form := c.From
+	model := form.Model
+	ch := false
+	new := *c.New
 	for _, data := range current.Result {
 		c.Old = &data
+		c.New, ch = data.Merge(new)
+
+		if !ch {
+			continue
+		}
 
 		err = c.beforeUpdate()
 		if err != nil {
 			return err
 		}
-	}
 
-	c.Linq.Returns.Used = true
-	c.Linq.Sql, err = c.Linq.updateSql()
-	if err != nil {
-		return err
-	}
+		_idt := c.Old.Get(IdTField)
+		if _idt == nil {
+			return logs.Errorm("No idT in data")
+		}
 
-	items, err := c.Linq.query(c.Linq.Sql)
-	if err != nil {
-		return err
-	}
+		c.Linq.Returns.Used = true
+		c.Linq.Where(model.C(IdTField).Eq(_idt))
 
-	c.Linq.Result = &items
+		c.Linq.Sql, err = c.Linq.updateSql()
+		if err != nil {
+			return err
+		}
 
-	for i, data := range items.Result {
-		c.Old = &current.Result[i]
-		c.New = &data
+		items, err := c.Linq.query(c.Linq.Sql)
+		if err != nil {
+			return err
+		}
 
+		c.Linq.Result = &items
+		if !items.Ok {
+			return nil
+		}
+
+		c.New = &items.Result[0]
 		err = c.afterUpdate()
 		if err != nil {
 			return err
@@ -379,6 +377,16 @@ func (c *Lcommand) Delete() error {
 		return err
 	}
 
+	if !current.Ok {
+		return nil
+	}
+
+	if current.Count > MaxDelete {
+		return logs.Errorf("Update only allow %d items", MaxDelete)
+	}
+
+	form := c.From
+	model := form.Model
 	for _, data := range current.Result {
 		c.Old = &data
 
@@ -386,22 +394,29 @@ func (c *Lcommand) Delete() error {
 		if err != nil {
 			return err
 		}
-	}
 
-	c.Linq.Sql, err = c.Linq.updateSql()
-	if err != nil {
-		return err
-	}
+		_idt := c.Old.Get(IdTField)
+		if _idt == nil {
+			return logs.Errorm("No idT in data")
+		}
 
-	items, err := c.Linq.query(c.Linq.Sql)
-	if err != nil {
-		return err
-	}
+		c.Linq.Returns.Used = false
+		c.Linq.Where(model.C(IdTField).Eq(_idt))
 
-	c.Linq.Result = &items
+		c.Linq.Sql, err = c.Linq.updateSql()
+		if err != nil {
+			return err
+		}
 
-	for _, data := range current.Result {
-		c.Old = &data
+		items, err := c.Linq.query(c.Linq.Sql)
+		if err != nil {
+			return err
+		}
+
+		c.Linq.Result = &items
+		if !items.Ok {
+			return nil
+		}
 
 		err = c.afterDelete()
 		if err != nil {
