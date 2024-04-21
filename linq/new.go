@@ -1,21 +1,19 @@
 package linq
 
-import "github.com/cgalvisleon/et/et"
-
 type COl struct {
 	Name        string
 	Description string
 	TypeData    TypeData
-	Definition  et.Json
+	Default     interface{}
 }
 
-type FKey struct {
+type ColFkey struct {
 	ForeignKey  []string
 	ParentModel *Model
 	ParentKey   []string
 }
 
-type Rol struct {
+type ColRol struct {
 	Name       string
 	ForeignKey []string
 	Parent     *Model
@@ -58,8 +56,9 @@ type Definition struct {
 	Hidden      []string
 	Required    []ColRequired
 	PrimaryKey  []string
-	ForeignKey  []FKey
-	Rollup      []Rol
+	ForeignKey  []ColFkey
+	Relation    []ColRol
+	Rollup      []ColRol
 	Details     []ColDetail
 	Formulas    []ColFormula
 	Trigger     []TRigger
@@ -69,10 +68,10 @@ func MOdel(def *Definition) *Model {
 	schema := NewSchema(def.Schema, "")
 	result := NewModel(schema, def.Name, def.Description, def.Version)
 	for _, col := range def.Columns {
-		result.DefineColum(col.Name, col.Description, col.TypeData, col.Definition)
+		result.DefineColum(col.Name, col.Description, col.TypeData, col.Default)
 	}
 	for _, col := range def.Atribs {
-		result.DefineAtrib(col.Name, col.Description, col.TypeData, col.Definition)
+		result.DefineAtrib(col.Name, col.Description, col.TypeData, col.Default)
 	}
 	for _, idx := range def.Indexes {
 		result.DefineIndex(idx, true)
@@ -89,7 +88,10 @@ func MOdel(def *Definition) *Model {
 		result.DefineForeignKey(fk.ForeignKey, fk.ParentModel, fk.ParentKey)
 	}
 	for _, ref := range def.Rollup {
-		result.DefineRollup(ref.Name, ref.ForeignKey, ref.Parent, ref.ParentKey, ref.Select, ref.Calculate)
+		result.DefineRollup(ref.Name, ref.ForeignKey, ref.Parent, ref.ParentKey, ref.Select[0])
+	}
+	for _, ref := range def.Relation {
+		result.DefineRelation(ref.Name, ref.ForeignKey, ref.Parent, ref.ParentKey, ref.Select, ref.Calculate)
 	}
 	for _, det := range def.Details {
 		result.DefineDetail(det.Name, det.Description, det.Default, det.FuncDetail)

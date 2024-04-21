@@ -1,23 +1,76 @@
 package linq
 
 import (
-	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
 
 // DefineColumn define a column in the model
-func (m *Model) DefineColum(name, description string, typeData TypeData, definition et.Json) *Column {
-	return newColumn(m, name, description, TpColumn, typeData, definition)
+func (m *Model) DefineColum(name, description string, typeData TypeData, _default interface{}) *Column {
+	return newColumn(m, name, description, TpColumn, typeData, _default)
 }
 
 // DefineAtrib define a atrib in the model
-func (m *Model) DefineAtrib(name, description string, typeData TypeData, definition et.Json) *Column {
+func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default interface{}) *Column {
 	source := COlumn(m, SourceField)
 	if source == nil {
-		source = m.DefineColum(SourceField, "Source field", TpJson, *TpJson.Definition())
+		source = m.DefineColum(SourceField, "Source field", TpJson, TpJson.Default())
 	}
 
-	result := newColumn(m, name, description, TpAtrib, typeData, definition)
+	result := newColumn(m, name, description, TpAtrib, typeData, _default)
+
+	return result
+}
+
+// Define reference to object in the model
+func (m *Model) DefineRelation(name string, foreignKey []string, parentModel *Model, parentKey []string, _select []string, tpCalculate TpCaculate) *Column {
+	result := newColumn(m, name, "", TpDetail, TpRelation, TpRelation.Default())
+	if result == nil {
+		return nil
+	}
+
+	result.RelationTo = &Relation{
+		ForeignKey: foreignKey,
+		Parent:     parentModel,
+		ParentKey:  parentKey,
+		Select:     _select,
+		Calculate:  tpCalculate,
+		Limit:      tpCalculate.Limit(),
+	}
+
+	m.DefineForeignKey(foreignKey, parentModel, parentKey)
+	m.RelationTo = append(m.RelationTo, result)
+
+	return result
+}
+
+// Define reference to object in the model
+func (m *Model) DefineRollup(name string, foreignKey []string, parentModel *Model, parentKey []string, _select string) *Column {
+	result := newColumn(m, name, "", TpDetail, TpRollup, TpRollup.Default())
+	if result == nil {
+		return nil
+	}
+
+	result.RelationTo = &Relation{
+		ForeignKey: foreignKey,
+		Parent:     parentModel,
+		ParentKey:  parentKey,
+		Select:     []string{_select},
+		Calculate:  TpUniqueValue,
+		Limit:      1,
+	}
+
+	m.DefineForeignKey(foreignKey, parentModel, parentKey)
+	m.RelationTo = append(m.RelationTo, result)
+
+	return result
+}
+
+// Define a detail collumn to the model
+func (m *Model) DefineDetail(name, description string, _default interface{}, funcDetail FuncDetail) *Column {
+	result := newColumn(m, name, description, TpDetail, TpFunction, _default)
+	result.FuncDetail = funcDetail
+
+	m.Details = append(m.Details, result)
 
 	return result
 }
@@ -77,38 +130,6 @@ func (m *Model) DefineForeignKey(foreignKey []string, parentModel *Model, parent
 	m.AddForeignKey(foreignKey, parentModel, parentKey)
 
 	return m
-}
-
-// Define reference to object in the model
-func (m *Model) DefineRollup(name string, foreignKey []string, parentModel *Model, parentKey []string, _select []string, calculate TpCaculate) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpDetail, TpRollup, *TpRollup.Definition())
-	if result == nil {
-		return nil
-	}
-
-	result.RelationTo = &Relation{
-		ForeignKey: foreignKey,
-		Parent:     parentModel,
-		ParentKey:  parentKey,
-		Select:     _select,
-		Calculate:  calculate,
-		Limit:      1,
-	}
-
-	m.DefineForeignKey(foreignKey, parentModel, parentKey)
-	m.RelationTo = append(m.RelationTo, result)
-
-	return result
-}
-
-// Define a detail collumn to the model
-func (m *Model) DefineDetail(name, description string, _default interface{}, funcDetail FuncDetail) *Column {
-	result := newColumn(m, name, description, TpDetail, TpFunction, *TpFunction.Definition())
-	result.FuncDetail = funcDetail
-
-	m.Details = append(m.Details, result)
-
-	return result
 }
 
 // Define a sql column to the model

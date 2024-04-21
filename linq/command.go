@@ -5,7 +5,6 @@ import (
 
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
-	"github.com/cgalvisleon/et/utility"
 )
 
 // TypeCommand struct to use in linq
@@ -77,28 +76,6 @@ func (l *Lcommand) Default(col *Column) interface{} {
 	}
 
 	return col.Default
-}
-
-// Return value from column
-func (l *Lcommand) Value(col *Column, value interface{}) (interface{}, error) {
-	switch col.TypeData {
-	case TpPassword:
-		modelStr := col.Definition.Str("model")
-		model := utility.GetCryptoType(modelStr)
-		str, ok := value.(string)
-		if !ok {
-			return "", logs.Errorf("Value is not a string")
-		}
-
-		result, err := utility.Encrypt(str, model)
-		if err != nil {
-			return "", err
-		}
-
-		return result, nil
-	default:
-		return value, nil
-	}
 }
 
 // NewCommand method to use in linq
@@ -178,7 +155,6 @@ func (c *Lcommand) consolidate() {
 			key := col.Low()
 			def := c.Default(col)
 			val := c.Data.Get(key)
-			val, _ = c.Value(col, val)
 			if val == nil {
 				val = def
 			}

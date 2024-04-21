@@ -14,7 +14,9 @@ import (
 // ddlListen return sql used listen ddl
 func ddlListen() string {
 	return `
-	CREATE OR REPLACE FUNCTION SYNC_INSERT()
+	CREATE SCHEMA IF NOT EXISTS linq;
+
+	CREATE OR REPLACE FUNCTION linq.SYNC_INSERT()
   RETURNS
     TRIGGER AS $$
   DECLARE
@@ -37,7 +39,7 @@ func ddlListen() string {
   END;
   $$ LANGUAGE plpgsql;
 
-  CREATE OR REPLACE FUNCTION SYNC_UPDATE()
+  CREATE OR REPLACE FUNCTION linq.SYNC_UPDATE()
   RETURNS
     TRIGGER AS $$
   DECLARE
@@ -60,7 +62,7 @@ func ddlListen() string {
   END;
   $$ LANGUAGE plpgsql;
 
-  CREATE OR REPLACE FUNCTION SYNC_DELETE()
+  CREATE OR REPLACE linq.FUNCTION SYNC_DELETE()
   RETURNS
     TRIGGER AS $$
   DECLARE
@@ -85,8 +87,9 @@ func ddlListen() string {
 func ddlSync() string {
 	return `
   -- DROP TABLE IF EXISTS SYNCS CASCADE;
+	CREATE SCHEMA IF NOT EXISTS linq;
 
-  CREATE TABLE IF NOT EXISTS SYNCS(
+  CREATE TABLE IF NOT EXISTS linq.SYNCS(
     DATE_MAKE TIMESTAMP DEFAULT NOW(),
     DATE_UPDATE TIMESTAMP DEFAULT NOW(),
     TABLE_SCHEMA VARCHAR(80) DEFAULT '',
@@ -98,15 +101,15 @@ func ddlSync() string {
     INDEX SERIAL,
     PRIMARY KEY (TABLE_SCHEMA, TABLE_NAME, _IDT)
   );  
-  CREATE INDEX IF NOT EXISTS SYNCS_INDEX_IDX ON SYNCS(INDEX);
-  CREATE INDEX IF NOT EXISTS SYNCS_TABLE_SCHEMA_IDX ON SYNCS(TABLE_SCHEMA);
-  CREATE INDEX IF NOT EXISTS SYNCS_TABLE_NAME_IDX ON SYNCS(TABLE_NAME);
-  CREATE INDEX IF NOT EXISTS SYNCS__IDT_IDX ON SYNCS(_IDT);
-  CREATE INDEX IF NOT EXISTS SYNCS_ACTION_IDX ON SYNCS(ACTION);
-  CREATE INDEX IF NOT EXISTS SYNCS__ID_IDX ON SYNCS(_ID);
-  CREATE INDEX IF NOT EXISTS SYNCS__SYNC_IDX ON SYNCS(_SYNC);
+  CREATE INDEX IF NOT EXISTS SYNCS_INDEX_IDX ON linq.SYNCS(INDEX);
+  CREATE INDEX IF NOT EXISTS SYNCS_TABLE_SCHEMA_IDX ON linq.SYNCS(TABLE_SCHEMA);
+  CREATE INDEX IF NOT EXISTS SYNCS_TABLE_NAME_IDX ON linq.SYNCS(TABLE_NAME);
+  CREATE INDEX IF NOT EXISTS SYNCS__IDT_IDX ON linq.SYNCS(_IDT);
+  CREATE INDEX IF NOT EXISTS SYNCS_ACTION_IDX ON linq.SYNCS(ACTION);
+  CREATE INDEX IF NOT EXISTS SYNCS__ID_IDX ON linq.SYNCS(_ID);
+  CREATE INDEX IF NOT EXISTS SYNCS__SYNC_IDX ON linq.SYNCS(_SYNC);
 
-  CREATE OR REPLACE FUNCTION SYNC_INSERT()
+  CREATE OR REPLACE FUNCTION linq.SYNC_INSERT()
   RETURNS
     TRIGGER AS $$
   DECLARE
@@ -115,7 +118,7 @@ func ddlSync() string {
     IF NEW._IDT = '-1' THEN
       NEW._IDT = uuid_generate_v4();
 
-      INSERT INTO SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
+      INSERT INTO linq.SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
       VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP, uuid_generate_v4());
 
       PERFORM pg_notify(
@@ -140,7 +143,7 @@ func ddlSync() string {
   END;
   $$ LANGUAGE plpgsql;
 
-  CREATE OR REPLACE FUNCTION SYNC_UPDATE()
+  CREATE OR REPLACE FUNCTION linq.SYNC_UPDATE()
   RETURNS
     TRIGGER AS $$
   DECLARE
@@ -152,7 +155,7 @@ func ddlSync() string {
      IF NEW._IDT = '-1' THEN
        NEW._IDT = uuid_generate_v4();
      END IF;
-     INSERT INTO SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
+     INSERT INTO linq.SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
      VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP, uuid_generate_v4())
 		 ON CONFLICT(TABLE_SCHEMA, TABLE_NAME, _IDT) DO UPDATE SET
      DATE_UPDATE = NOW(),
@@ -182,7 +185,7 @@ func ddlSync() string {
   END;
   $$ LANGUAGE plpgsql;
 
-  CREATE OR REPLACE FUNCTION SYNC_DELETE()
+  CREATE OR REPLACE FUNCTION linq.SYNC_DELETE()
   RETURNS
     TRIGGER AS $$
   DECLARE
@@ -190,13 +193,13 @@ func ddlSync() string {
     CHANNEL VARCHAR(250);
   BEGIN
     SELECT INDEX INTO VINDEX
-    FROM SYNCS
+    FROM linq.SYNCS
     WHERE TABLE_SCHEMA = TG_TABLE_SCHEMA
     AND TABLE_NAME = TG_TABLE_NAME
     AND _IDT = OLD._IDT
     LIMIT 1;
     IF FOUND THEN
-      UPDATE SYNCS SET
+      UPDATE linq.SYNCS SET
       DATE_UPDATE = NOW(),
       ACTION = TG_OP,
       _SYNC = FALSE,
@@ -230,26 +233,27 @@ func ddlSync() string {
 // ddlRecicling return sql recicling ddl
 func ddlRecicling() string {
 	return `
-	-- DROP TABLE IF EXISTS RECYCLING CASCADE;
+	-- DROP TABLE IF EXISTS linq.RECYCLING CASCADE;
+	CREATE SCHEMA IF NOT EXISTS linq;
 
-  CREATE TABLE IF NOT EXISTS RECYCLING(
+  CREATE TABLE IF NOT EXISTS linq.RECYCLING(
 		TABLE_SCHEMA VARCHAR(80) DEFAULT '',
     TABLE_NAME VARCHAR(80) DEFAULT '',
     _IDT VARCHAR(80) DEFAULT '-1',
     INDEX SERIAL,
 		PRIMARY KEY(TABLE_SCHEMA, TABLE_NAME, _IDT)
 	);
-  CREATE INDEX IF NOT EXISTS RECYCLING_INDEX_IDX ON RECYCLING(INDEX);
-	CREATE INDEX IF NOT EXISTS RECYCLING_TABLE_SCHEMA_IDX ON RECYCLING(TABLE_SCHEMA);
-	CREATE INDEX IF NOT EXISTS RECYCLING_TABLE_NAME_IDX ON RECYCLING(TABLE_NAME);
-	CREATE INDEX IF NOT EXISTS RECYCLING__IDT_IDX ON RECYCLING(INDEX);
+  CREATE INDEX IF NOT EXISTS RECYCLING_INDEX_IDX ON linq.RECYCLING(INDEX);
+	CREATE INDEX IF NOT EXISTS RECYCLING_TABLE_SCHEMA_IDX ON linq.RECYCLING(TABLE_SCHEMA);
+	CREATE INDEX IF NOT EXISTS RECYCLING_TABLE_NAME_IDX ON linq.RECYCLING(TABLE_NAME);
+	CREATE INDEX IF NOT EXISTS RECYCLING__IDT_IDX ON linq.RECYCLING(INDEX);
 
-	CREATE OR REPLACE FUNCTION RECYCLING()
+	CREATE OR REPLACE FUNCTION linq.RECYCLING()
   RETURNS
     TRIGGER AS $$
   BEGIN
 		IF NEW._STATE != OLD._STATE AND NEW._STATE = '-2' THEN
-    	INSERT INTO RECYCLING(TABLE_SCHEMA, TABLE_NAME, _IDT)
+    	INSERT INTO linq.RECYCLING(TABLE_SCHEMA, TABLE_NAME, _IDT)
     	VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT);
 
       PERFORM pg_notify(
@@ -259,7 +263,7 @@ func ddlRecicling() string {
       )::text
       );
 		ELSEIF NEW._STATE != OLD._STATE AND OLD._STATE = '-2' THEN
-			DELETE FROM RECYCLING WHERE _IDT=NEW._IDT;
+			DELETE FROM linq.RECYCLING WHERE _IDT=NEW._IDT;
     END IF;
 
   RETURN NEW;
@@ -270,7 +274,7 @@ func ddlRecicling() string {
   RETURNS
     TRIGGER AS $$
   BEGIN
-		DELETE FROM RECYCLING WHERE _IDT=OLD._IDT;
+		DELETE FROM linq.RECYCLING WHERE _IDT=OLD._IDT;
   	RETURN OLD;
   END;
   $$ LANGUAGE plpgsql;
@@ -279,20 +283,21 @@ func ddlRecicling() string {
 
 func ddlStrucs() string {
 	return `
-	-- DROP TABLE IF EXISTS STRUCTS CASCADE;
+	-- DROP TABLE IF EXISTS linq.STRUCTS CASCADE;
+	CREATE SCHEMA IF NOT EXISTS linq;
 
-  CREATE TABLE IF NOT EXISTS STRUCTS(
+  CREATE TABLE IF NOT EXISTS linq.STRUCTS(
 		TABLE_SCHEMA VARCHAR(80) DEFAULT '',
     TABLE_NAME VARCHAR(80) DEFAULT '',
     SQL TEXT DEFAULT '',
     INDEX SERIAL,
 		PRIMARY KEY(TABLE_SCHEMA, TABLE_NAME)
 	);
-  CREATE INDEX IF NOT EXISTS STRUCTS_INDEX_IDX ON STRUCTS(INDEX);
-	CREATE INDEX IF NOT EXISTS STRUCTS_SCHEMA_IDX ON STRUCTS(TABLE_SCHEMA);
-	CREATE INDEX IF NOT EXISTS STRUCTS_NAME_IDX ON STRUCTS(TABLE_NAME);
+  CREATE INDEX IF NOT EXISTS STRUCTS_INDEX_IDX ON linq.STRUCTS(INDEX);
+	CREATE INDEX IF NOT EXISTS STRUCTS_SCHEMA_IDX ON linq.STRUCTS(TABLE_SCHEMA);
+	CREATE INDEX IF NOT EXISTS STRUCTS_NAME_IDX ON linq.STRUCTS(TABLE_NAME);
 
-	CREATE OR REPLACE FUNCTION setstruct(
+	CREATE OR REPLACE FUNCTION linq.setstruct(
 	VSCHEMA VARCHAR(80),
 	VNAME VARCHAR(80),
 	VSQL TEXT)
@@ -300,7 +305,7 @@ func ddlStrucs() string {
 	DECLARE
 	 result INT;
 	BEGIN
-	 INSERT INTO STRUCTS AS A (TABLE_SCHEMA, TABLE_NAME, SQL)
+	 INSERT INTO linq.STRUCTS AS A (TABLE_SCHEMA, TABLE_NAME, SQL)
 	 SELECT VSCHEMA, VNAME, VSQL
 	 ON CONFLICT (TABLE_SCHEMA, TABLE_NAME) DO UPDATE SET
 	 SQL = VSQL
@@ -314,20 +319,21 @@ func ddlStrucs() string {
 
 func ddlSeries() string {
 	return `
-	-- DROP TABLE IF EXISTS SERIES CASCADE;
+	-- DROP TABLE IF EXISTS linq.SERIES CASCADE;
+	CREATE SCHEMA IF NOT EXISTS linq;
 
-  CREATE TABLE IF NOT EXISTS SERIES(		
+  CREATE TABLE IF NOT EXISTS linq.SERIES(		
 		SERIE VARCHAR(250) DEFAULT '',
 		VALUE BIGINT DEFAULT 0,
 		PRIMARY KEY(SERIE)
 	);
 	
-	CREATE OR REPLACE FUNCTION nextserie(tag VARCHAR(250))
+	CREATE OR REPLACE FUNCTION linq.nextserie(tag VARCHAR(250))
 	RETURNS BIGINT AS $$
 	DECLARE
 	 result BIGINT;
 	BEGIN
-	 INSERT INTO SERIES AS A (SERIE, VALUE)
+	 INSERT INTO linq.SERIES AS A (SERIE, VALUE)
 	 SELECT tag, 1
 	 ON CONFLICT (SERIE) DO UPDATE SET
 	 VALUE = A.VALUE + 1
@@ -337,12 +343,12 @@ func ddlSeries() string {
 	END;
 	$$ LANGUAGE plpgsql;
 	
-	CREATE OR REPLACE FUNCTION setserie(tag VARCHAR(250), val BIGINT)
+	CREATE OR REPLACE FUNCTION linq.setserie(tag VARCHAR(250), val BIGINT)
 	RETURNS BIGINT AS $$
 	DECLARE
 	 result BIGINT;
 	BEGIN
-	 INSERT INTO SERIES AS A (SERIE, VALUE)
+	 INSERT INTO linq.SERIES AS A (SERIE, VALUE)
 	 SELECT tag, val
 	 ON CONFLICT (SERIE) DO UPDATE SET
 	 VALUE = val
@@ -353,13 +359,13 @@ func ddlSeries() string {
 	END;
 	$$ LANGUAGE plpgsql;
 	
-	CREATE OR REPLACE FUNCTION currserie(tag VARCHAR(250))
+	CREATE OR REPLACE FUNCTION linq.currserie(tag VARCHAR(250))
 	RETURNS BIGINT AS $$
 	DECLARE
 	 result BIGINT;
 	BEGIN
 	 SELECT VALUE INTO result
-	 FROM SERIES
+	 FROM linq.SERIES
 	 WHERE SERIE = tag LIMIT 1;
 
 	 RETURN COALESCE(result, 0);
@@ -372,8 +378,9 @@ func ddlSeries() string {
 func ddlFuntions() string {
 	return `
 	CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+	CREATE SCHEMA IF NOT EXISTS linq;
 	
-	CREATE OR REPLACE FUNCTION create_constraint_if_not_exists(
+	CREATE OR REPLACE FUNCTION linq.create_constraint_if_not_exists(
 	s_name text,
 	t_name text,
 	c_name text,
@@ -396,30 +403,58 @@ func ddlFuntions() string {
 // ddlDedault return sql default values
 func ddlDefault(col *linq.Column) string {
 	var result string
-	switch col.Default {
-	case linq.DefUuid:
+	switch col.TypeData {
+	case linq.TpKey:
 		result = `'-1'`
-	case linq.DefInt:
+	case linq.TpText:
+		result = `''`
+	case linq.TpMemo:
+		result = `''`
+	case linq.TpNumber:
 		result = `0`
-	case linq.DefInt64:
-		result = `0`
-	case linq.DefFloat:
-		result = `0.0`
-	case linq.DefBool:
-		result = `FALSE`
-	case linq.DefNow:
+	case linq.TpDate:
 		result = `NOW()`
-	case linq.DefJson:
+	case linq.TpCheckbox:
+		result = `FALSE`
+	case linq.TpRelation:
+		result = `''`
+	case linq.TpRollup:
+		result = `''`
+	case linq.TpCreatedTime:
+		result = `NOW()`
+	case linq.TpCreatedBy:
+		result = `'{ "_id": "", "name": "" }'`
+	case linq.TpLastEditedTime:
+		result = `NOW()`
+	case linq.TpLastEditedBy:
+		result = `'{ "_id": "", "name": "" }'`
+	case linq.TpStatus:
+		result = `'{ "_id": "0", "main": "State", "name": "Activo" }'`
+	case linq.TpPerson:
+		result = `'{ "_id": "", "name": "" }'`
+	case linq.TpFile:
+		result = `''`
+	case linq.TpURL:
+		result = `''`
+	case linq.TpEmail:
+		result = `''`
+	case linq.TpPhone:
+		result = `''`
+	case linq.TpFormula:
+		result = `''`
+	case linq.TpSelect:
+		result = `''`
+	case linq.TpMultiSelect:
+		result = `''`
+	case linq.TpJson:
 		result = `'{}'`
-	case linq.DefArray:
+	case linq.TpArray:
 		result = `'[]'`
-	case linq.DefObject:
-		result = `'{}'`
-	case linq.DefSerie:
+	case linq.TpSerie:
 		result = `0`
 	default:
-		val := col.Default.Value()
-		result = strs.Format(`%v`, et.Unquote(val))
+		val := col.Default
+		result = strs.Format(`%v`, et.Quote(val))
 	}
 
 	return strs.Append("DEFAULT", result, " ")
@@ -428,30 +463,40 @@ func ddlDefault(col *linq.Column) string {
 // ddlType return sql type ddl
 func ddlType(col *linq.Column) string {
 	switch col.TypeData {
-	case linq.TpKey:
+	case linq.TpKey, linq.TpRelation, linq.TpRollup, linq.TpStatus, linq.TpPhone, linq.TpSelect, linq.TpMultiSelect:
 		return "VARCHAR(80)"
-	case linq.TpInt:
-		return "INT"
-	case linq.TpInt64:
-		return "BIGINT"
-	case linq.TpFloat:
-		return "DECIMAL(18,2)"
-	case linq.TpBool:
+	case linq.TpMemo:
+		return "TEXT"
+	case linq.TpNumber:
+		return "DECIMAL(18, 2)"
+	case linq.TpDate:
+		return "TIMESTAMP"
+	case linq.TpCheckbox:
 		return "BOOLEAN"
-	case linq.TpDateTime:
+	case linq.TpCreatedTime:
 		return "TIMESTAMP"
-	case linq.TpTimeStamp:
+	case linq.TpCreatedBy:
+		return "JSONB"
+	case linq.TpLastEditedTime:
 		return "TIMESTAMP"
+	case linq.TpLastEditedBy:
+		return "JSONB"
+	case linq.TpPerson:
+		return "JSONB"
+	case linq.TpFile:
+		return "JSONB"
+	case linq.TpURL:
+		return "TEXT"
+	case linq.TpFormula:
+		return "JSONB"
 	case linq.TpJson:
 		return "JSONB"
 	case linq.TpArray:
 		return "JSONB"
 	case linq.TpSerie:
 		return "BIGINT"
-	case linq.TpText:
-		return "TEXT"
 	default:
-		return "VARCHAR(255)"
+		return "VARCHAR(250)"
 	}
 }
 
@@ -491,19 +536,24 @@ func ddlUnique(col *linq.Column) string {
 
 // ddlPrimaryKey return sql primary key ddl
 func ddlPrimaryKey(col *linq.Column) string {
-	pkey := strs.Replace(col.Table(), ".", "_")
-	pkey = strs.Replace(pkey, "-", "_") + "_pkey"
-	pkey = strs.Lowcase(pkey)
-	def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s PRIMARY KEY (%s);`, strs.Uppcase(col.Table()), pkey, strings.Join(col.PrimaryKeys(), ", "))
-	return strs.Format(`SELECT create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, col.Schema.Name, col.Model.Name, pkey, def)
+	schema := strs.Uppcase(col.Model.Schema.Name)
+	key := strs.Replace(col.Table(), ".", "_")
+	key = strs.Replace(key, "-", "_") + "_pkey"
+	key = strs.Lowcase(key)
+	def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s PRIMARY KEY (%s);`, strs.Uppcase(col.Table()), key, strings.Join(col.PrimaryKeys(), ", "))
+	return strs.Format(`SELECT linq.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, schema, col.Model.Name, key, def)
 }
 
 // ddlForeignKeys return ForeignKey ddl
 func ddlForeignKeys(model *linq.Model) string {
 	var result string
 	for _, ref := range model.ForeignKey {
-		def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s);`, strs.Uppcase(model.Table), ref.Name, strings.Join(ref.ForeignKey, ", "), ref.ParentModel.Table, strings.Join(ref.ParentKey, ", "))
-		def = strs.Format(`SELECT create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, model.Schema.Name, model.Name, ref.Name, def)
+		schema := strs.Uppcase(model.Schema.Name)
+		key := strs.Replace(model.Table, ".", "_")
+		key = strs.Replace(key, "-", "_") + "_pkey"
+		key = strs.Lowcase(key)
+		def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s);`, strs.Uppcase(model.Table), key, strings.Join(ref.ForeignKey, ", "), ref.Parent.Table, strings.Join(ref.ParentKey, ", "))
+		def = strs.Format(`SELECT linq.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, schema, model.Name, key, def)
 		result = strs.Append(result, def, "\n")
 	}
 

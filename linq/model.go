@@ -106,7 +106,6 @@ type Model struct {
 	Details           []*Column
 	Hidden            []*Column
 	Required          []*Column
-	Password          []*Column
 	Source            *Column
 	UseStatus         bool
 	UseSource         bool
@@ -155,7 +154,6 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		Details:           []*Column{},
 		Hidden:            []*Column{},
 		Required:          []*Column{},
-		Password:          []*Column{},
 		Source:            nil,
 		UseStatus:         false,
 		UseSource:         false,
@@ -187,6 +185,9 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 }
 
 func (m *Model) Save() error {
+	if m.ItIsBuilt {
+
+	}
 
 	return nil
 }

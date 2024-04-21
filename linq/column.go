@@ -66,6 +66,7 @@ type Column struct {
 	Indexed     bool
 	Unique      bool
 	Hidden      bool
+	SourceField bool
 	Required    *Required
 }
 
@@ -107,7 +108,7 @@ func COlumn(model *Model, name string) *Column {
 }
 
 // NewColumn create a new column
-func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, definition et.Json) *Column {
+func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default interface{}) *Column {
 	tag := name
 	name = nAme(name)
 	result := COlumn(model, name)
@@ -122,8 +123,9 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		Description: description,
 		TypeColumn:  typeColumm,
 		TypeData:    typeData,
-		Definition:  definition,
-		Default:     definition.Get("default"),
+		Definition:  *typeData.Definition(),
+		Default:     _default,
+		SourceField: name == strs.Uppcase(SourceField),
 	}
 
 	if !model.UseStatus {
@@ -158,6 +160,10 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	}
 
 	model.AddColumn(result)
+
+	if typeData.Indexed() {
+		model.AddIndex(name, true)
+	}
 
 	return result
 }

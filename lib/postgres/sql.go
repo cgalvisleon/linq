@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"slices"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
@@ -21,36 +23,25 @@ func sqlColumns(l *linq.Linq, cols ...*linq.Lselect) string {
 	}
 
 	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
-		m := f.Model
 		if c.TypeColumn == linq.TpDetail {
 			l.GetDetail(c)
 		} else {
 			s := l.GetColumn(c)
-			switch c.TypeColumn {
-			case linq.TpColumn: // A.NAME
+			if linq.TpColumn == c.TypeColumn {
 				def = strs.Format(`%s`, s.As())
 				appendColumn(def)
-			case linq.TpAtrib: // A._DATA#>>'{name}' AS NAME
-				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(m.SourceField), c.Low())
+			} else if linq.TpAtrib == c.TypeColumn {
+				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(linq.SourceField), c.Low())
 				def = strs.Format(`%s AS %s`, def, c.Up())
 				appendColumn(def)
-			case linq.TpReference: //jsonb_build_object('_id', A.Key, 'name', '(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)') AS NAME
-				r := c.Reference
-				other := l.NewFrom(r.OtherKey.Model)
-				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))
-				def = strs.Format(`jsonb_build_object('_id', %s, 'name', %s)`, r.ThisKey.As(l), def)
+			} else if slices.Contains([]linq.TypeData{linq.TpRollup, linq.TpRelation}, c.TypeData) {
+				r := c.RelationTo
+				parent := l.NewFrom(r.Parent)
+				def = strs.Format(`(SELECT row_to_json(%s) FROM %s AS %s WHERE %s LIMIT 1)`, r.SelectsAs(l), parent.Table, parent.AS, r.WhereAs(l))
 				def = strs.Format(`%s AS %s`, def, c.Up())
 				appendColumn(def)
-			case linq.TpCaption: //(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1) AS NAME
-				r := c.Reference
-				other := l.NewFrom(r.OtherKey.Model)
-				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))
-				def = strs.Format(`%s AS %s`, def, c.Up())
-				appendColumn(def)
-			case linq.TpSql:
-				def = strs.Format(`(%s)`, c.Sql)
-				def = strs.ReplaceAll(def, []string{"(("}, "(")
-				def = strs.ReplaceAll(def, []string{"))"}, ")")
+			} else if linq.TpFormula == c.TypeData {
+				def = strs.Format(`(%s)`, c.Formula)
 				def = strs.Format(`%s AS %s`, def, c.Up())
 				appendColumn(def)
 			}
@@ -95,39 +86,30 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 	}
 
 	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
-		m := f.Model
 		if c.TypeColumn == linq.TpDetail {
 			l.GetDetail(c)
 		} else if !c.SourceField {
 			s := l.GetColumn(c)
-			switch c.TypeColumn {
-			case linq.TpColumn: // 'name', A.NAME
+			if linq.TpColumn == c.TypeColumn { // 'name', A.NAME
 				def = strs.Format(`'%s', %s`, c.Low(), s.As())
 				appendObjects(def)
-			case linq.TpAtrib: // 'name', A._DATA#>>'{name}'
+			} else if linq.TpAtrib == c.TypeColumn { // 'name', A._DATA#>>'{name}'
 				if f.Linq.TypeQuery == linq.TpCommand {
-					def = strs.Format(`%s#>>'{%s}'`, strs.Uppcase(m.SourceField), c.Low())
+					def = strs.Format(`%s#>>'{%s}'`, strs.Uppcase(linq.SourceField), c.Low())
 				} else {
-					def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(m.SourceField), c.Low())
+					def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(linq.SourceField), c.Low())
 				}
 				def = strs.Format(`'%s', %s`, c.Low(), def)
 				appendObjects(def)
-			case linq.TpReference: //'name', jsonb_build_object('_id', A.Key, 'name', '(SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)')
-				r := c.Reference
-				other := l.NewFrom(r.OtherKey.Model)
-				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))
-				def = strs.Format(`jsonb_build_object('_id', %s, 'name', %s)`, r.ThisKey.As(l), def)
-				def = strs.Format(`'%s', %s`, r.Low(), def)
-				appendObjects(def)
-			case linq.TpCaption: //'name', (SELECT B.name FROM table AS B WHERE _id=A.Key LIMIT 1)
-				r := c.Reference
-				other := l.NewFrom(r.OtherKey.Model)
-				def = strs.Format(`(SELECT %s FROM %s AS %s WHERE %s=%s LIMIT 1)`, other.AsColumn(r.Reference), other.Model.Table, other.AS, other.AsColumn(r.OtherKey), r.ThisKey.As(l))
-				def = strs.Format(`'%s', %s`, r.Low(), def)
-				appendObjects(def)
-			case linq.TpSql:
-				def = strs.Format(`(%s)`, c.Sql)
+			} else if slices.Contains([]linq.TypeData{linq.TpRollup, linq.TpRelation}, c.TypeData) { // 'name', (SELECT row_to_json() FROM WUERE)
+				r := c.RelationTo
+				parent := l.NewFrom(r.Parent)
+				def = strs.Format(`(SELECT row_to_json(%s) FROM %s AS %s WHERE %s LIMIT 1)`, r.SelectsAs(l), parent.Table, parent.AS, r.WhereAs(l))
 				def = strs.Format(`'%s', %s`, c.Low(), def)
+				appendObjects(def)
+			} else if linq.TpFormula == c.TypeData {
+				def = strs.Format(`'%s', %s`, c.Low(), def)
+				def = strs.Format(`(%s)`, c.Formula)
 				appendObjects(def)
 			}
 		}
@@ -144,7 +126,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 			result = strs.Append(result, def, "||")
 		}
 
-		return strs.Format(`%s AS %s`, result, m.SourceField)
+		return strs.Format(`%s AS %s`, result, linq.SourceField)
 	}
 
 	for _, c := range cols {
@@ -154,10 +136,8 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 		def = strs.Format("jsonb_build_object(%s)", objects)
 		result = strs.Append(result, def, "||")
 	}
-	f := l.Froms[0]
-	m := f.Model
 
-	return strs.Format(`%s AS %s`, result, m.SourceField)
+	return strs.Format(`%s AS %s`, result, linq.SourceField)
 }
 
 // Add select to sql

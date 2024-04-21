@@ -14,62 +14,78 @@ import (
 // Sqlite default values
 func ddlDefault(col *linq.Column) string {
 	var result string
-	switch col.Default {
-	case linq.DefUuid:
+	switch col.TypeData {
+	case linq.TpKey:
 		result = `'-1'`
-	case linq.DefInt:
+	case linq.TpText:
+		result = `''`
+	case linq.TpMemo:
+		result = `''`
+	case linq.TpNumber:
 		result = `0`
-	case linq.DefInt64:
-		result = `0`
-	case linq.DefFloat:
-		result = `0.0`
-	case linq.DefBool:
-		result = `0` // 0 is false and 1 is true
-	case linq.DefNow:
-		result = `CURRENT_TIMESTAMP`
-	case linq.DefJson:
+	case linq.TpDate:
+		result = `NOW()`
+	case linq.TpCheckbox:
+		result = `FALSE`
+	case linq.TpRelation:
+		result = `''`
+	case linq.TpRollup:
+		result = `''`
+	case linq.TpCreatedTime:
+		result = `NOW()`
+	case linq.TpCreatedBy:
+		result = `'{ "_id": "", "name": "" }'`
+	case linq.TpLastEditedTime:
+		result = `NOW()`
+	case linq.TpLastEditedBy:
+		result = `'{ "_id": "", "name": "" }'`
+	case linq.TpStatus:
+		result = `'{ "_id": "0", "main": "State", "name": "Activo" }'`
+	case linq.TpPerson:
+		result = `'{ "_id": "", "name": "" }'`
+	case linq.TpFile:
+		result = `''`
+	case linq.TpURL:
+		result = `''`
+	case linq.TpEmail:
+		result = `''`
+	case linq.TpPhone:
+		result = `''`
+	case linq.TpFormula:
+		result = `''`
+	case linq.TpSelect:
+		result = `''`
+	case linq.TpMultiSelect:
+		result = `''`
+	case linq.TpJson:
 		result = `'{}'`
-	case linq.DefArray:
+	case linq.TpArray:
 		result = `'[]'`
-	case linq.DefObject:
-		result = `'{}'`
-	case linq.DefSerie:
+	case linq.TpSerie:
 		result = `0`
-	case linq.DefNil:
-		result = `NULL`
 	default:
-		val := col.Default.Value()
-		result = strs.Format(`%v`, et.Unquote(val))
+		val := col.Default
+		result = strs.Format(`%v`, et.Quote(val))
 	}
 
-	return strs.Format("DEFAULT %v", result)
+	return strs.Append("DEFAULT", result, " ")
 }
 
 // Sqlite type ddl
 func ddlType(col *linq.Column) string {
 	switch col.TypeData {
-	case linq.TpKey:
-		return "TEXT"
-	case linq.TpInt:
-		return "INTEGER"
-	case linq.TpInt64:
-		return "INTEGER"
-	case linq.TpFloat:
+	case linq.TpNumber:
 		return "REAL"
-	case linq.TpBool:
-		return "INTEGER"
-	case linq.TpDateTime:
-		return "TEXT"
-	case linq.TpTimeStamp:
+	case linq.TpDate:
 		return "TIMESTAMP"
-	case linq.TpJson:
-		return "TEXT"
-	case linq.TpArray:
-		return "TEXT"
+	case linq.TpCheckbox:
+		return "INTEGER"
+	case linq.TpCreatedTime:
+		return "TIMESTAMP"
+	case linq.TpLastEditedTime:
+		return "TIMESTAMP"
 	case linq.TpSerie:
 		return "INTEGER"
-	case linq.TpText:
-		return "TEXT"
 	default:
 		return "TEXT"
 	}
@@ -121,7 +137,7 @@ func ddlForeignKeys(model *linq.Model) string {
 	for _, ref := range model.ForeignKey {
 		fkey := strings.Join(ref.ForeignKey, ", ")
 		pKey := strings.Join(ref.ParentKey, ", ")
-		def := strs.Format(`FOREIGN KEY(%s) REFERENCES %s(%s)`, fkey, ref.ParentModel.Table, pKey)
+		def := strs.Format(`FOREIGN KEY(%s) REFERENCES %s(%s)`, fkey, ref.Parent.Table, pKey)
 		result = strs.Append(result, def, ",\n")
 	}
 

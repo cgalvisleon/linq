@@ -22,16 +22,16 @@ func main() {
 		Description: "",
 		Version:     1,
 		Columns: []linq.COl{
-			{Name: "date_make", Description: "", TypeData: linq.TpCreatedTime, Definition: *linq.TpCreatedTime.Definition()},
-			{Name: "date_update", Description: "", TypeData: linq.TpLastEditedTime, Definition: *linq.TpLastEditedTime.Definition()},
-			{Name: "_id", Description: "", TypeData: linq.TpKey, Definition: *linq.TpKey.Definition()},
-			{Name: "username", Description: "", TypeData: linq.TpShortText, Definition: *linq.TpShortText.Definition()},
-			{Name: "password", Description: "", TypeData: linq.TpPassword, Definition: *linq.TpPassword.Definition()},
-			{Name: "edad", Description: "", TypeData: linq.TpNumber, Definition: *linq.TpNumber.Definition()},
-			{Name: linq.SourceField, Description: "", TypeData: linq.TpJson, Definition: *linq.TpJson.Definition()},
+			{Name: "date_make", Description: "", TypeData: linq.TpCreatedTime, Default: linq.TpCreatedTime.Default()},
+			{Name: "date_update", Description: "", TypeData: linq.TpLastEditedTime, Default: linq.TpLastEditedTime.Default()},
+			{Name: "_id", Description: "", TypeData: linq.TpKey, Default: linq.TpKey.Default()},
+			{Name: "username", Description: "", TypeData: linq.TpKey, Default: linq.TpKey.Default()},
+			{Name: "password", Description: "", TypeData: linq.TpKey, Default: linq.TpKey.Default()},
+			{Name: "edad", Description: "", TypeData: linq.TpNumber, Default: linq.TpNumber.Default()},
+			{Name: linq.SourceField, Description: "", TypeData: linq.TpJson, Default: linq.TpJson.Default()},
 		},
 		Atribs: []linq.COl{
-			{Name: "name", Description: "", TypeData: linq.TpShortText, Definition: *linq.TpShortText.Definition()},
+			{Name: "name", Description: "", TypeData: linq.TpText, Default: linq.TpText.Default()},
 		},
 		PrimaryKey: []string{"_id"},
 	})
@@ -42,14 +42,14 @@ func main() {
 		Description: "",
 		Version:     1,
 		Columns: []linq.COl{
-			{Name: "date_make", Description: "", TypeData: linq.TpCreatedTime, Definition: *linq.TpCreatedTime.Definition()},
-			{Name: "_id", Description: "", TypeData: linq.TpKey, Definition: *linq.TpKey.Definition()},
-			{Name: "name", Description: "", TypeData: linq.TpShortText, Definition: *linq.TpShortText.Definition()},
-			{Name: "description", Description: "", TypeData: linq.TpText, Definition: *linq.TpText.Definition()},
-			{Name: "user_id", Description: "", TypeData: linq.TpRelation, Definition: *linq.TpRelation.Definition()},
+			{Name: "date_make", Description: "", TypeData: linq.TpCreatedTime, Default: linq.TpCreatedTime.Default()},
+			{Name: "_id", Description: "", TypeData: linq.TpKey, Default: linq.TpKey.Default()},
+			{Name: "name", Description: "", TypeData: linq.TpText, Default: linq.TpText.Default()},
+			{Name: "description", Description: "", TypeData: linq.TpText, Default: linq.TpText.Default()},
+			{Name: "user_id", Description: "", TypeData: linq.TpRelation, Default: linq.TpRelation.Default()},
 		},
 		PrimaryKey: []string{"_id"},
-		ForeignKey: []linq.FKey{
+		ForeignKey: []linq.ColFkey{
 			{ForeignKey: []string{"user_id"}, ParentModel: User, ParentKey: []string{"_id"}},
 		},
 	})

@@ -11,8 +11,7 @@ type TypeData int
 const (
 	TpKey TypeData = iota
 	TpText
-	TpShortText
-	TpPassword
+	TpMemo
 	TpNumber
 	TpSelect
 	TpMultiSelect
@@ -25,6 +24,7 @@ const (
 	TpEmail // Email
 	TpPhone
 	TpFormula  // Formula
+	TpFunction // Function
 	TpRelation // Relation with other model
 	TpRollup   // Rollup (Enrollar) with other model
 	TpCreatedTime
@@ -34,7 +34,7 @@ const (
 	TpProject
 	TpJson
 	TpArray
-	TpFunction
+	TpSerie
 )
 
 func (t TypeData) String() string {
@@ -43,10 +43,8 @@ func (t TypeData) String() string {
 		return "Key"
 	case TpText:
 		return "Text"
-	case TpShortText:
-		return "Short text"
-	case TpPassword:
-		return "Password"
+	case TpMemo:
+		return "Memo"
 	case TpNumber:
 		return "Number"
 	case TpSelect:
@@ -60,7 +58,7 @@ func (t TypeData) String() string {
 	case TpPerson:
 		return "Person"
 	case TpFile:
-		return "File & media"
+		return "File"
 	case TpCheckbox:
 		return "Checkbox"
 	case TpURL:
@@ -71,6 +69,8 @@ func (t TypeData) String() string {
 		return "Phone"
 	case TpFormula:
 		return "Formula"
+	case TpFunction:
+		return "Function"
 	case TpRelation:
 		return "Relation"
 	case TpRollup:
@@ -89,10 +89,11 @@ func (t TypeData) String() string {
 		return "Json"
 	case TpArray:
 		return "Array"
-	case TpFunction:
-		return "Function"
+	case TpSerie:
+		return "Serie"
+	default:
+		return "Unknown"
 	}
-	return ""
 }
 
 func (t TypeData) Default() interface{} {
@@ -101,9 +102,7 @@ func (t TypeData) Default() interface{} {
 		return "-1"
 	case TpText:
 		return ""
-	case TpShortText:
-		return ""
-	case TpPassword:
+	case TpMemo:
 		return ""
 	case TpNumber:
 		return 0
@@ -112,17 +111,16 @@ func (t TypeData) Default() interface{} {
 	case TpMultiSelect:
 		return ""
 	case TpStatus:
-		return et.Json{
-			"_id":  "0",
-			"main": "State",
-			"name": "Activo",
-		}
+		return "0"
 	case TpDate:
-		return time.Now()
-	case TpPerson:
-		return et.Json{}
-	case TpFile:
 		return ""
+	case TpPerson:
+		return et.Json{
+			"_id":  "-1",
+			"name": "",
+		}
+	case TpFile:
+		return et.Json{}
 	case TpCheckbox:
 		return false
 	case TpURL:
@@ -133,6 +131,8 @@ func (t TypeData) Default() interface{} {
 		return ""
 	case TpFormula:
 		return ""
+	case TpFunction:
+		return ""
 	case TpRelation:
 		return ""
 	case TpRollup:
@@ -141,29 +141,36 @@ func (t TypeData) Default() interface{} {
 		return time.Now()
 	case TpCreatedBy:
 		return et.Json{
-			"_id":  "",
+			"_id":  "-1",
 			"name": "",
 		}
 	case TpLastEditedTime:
 		return time.Now()
 	case TpLastEditedBy:
 		return et.Json{
-			"_id":  "",
+			"_id":  "-1",
 			"name": "",
 		}
 	case TpProject:
-		return et.Json{
-			"_id":  "",
-			"name": "",
-		}
+		return ""
 	case TpJson:
 		return et.Json{}
 	case TpArray:
 		return []et.Json{}
-	case TpFunction:
+	case TpSerie:
+		return 0
+	default:
 		return ""
 	}
-	return ""
+}
+
+func (t TypeData) Indexed() bool {
+	switch t {
+	case TpKey, TpSelect, TpMultiSelect, TpStatus, TpDate, TpPerson, TpCheckbox, TpURL, TpEmail, TpPhone, TpRelation, TpRollup, TpCreatedTime, TpCreatedBy, TpLastEditedTime, TpLastEditedBy, TpProject, TpSerie:
+		return true
+	default:
+		return false
+	}
 }
 
 func (t TypeData) Mutate(val interface{}) {
@@ -191,105 +198,89 @@ func (t TypeData) Definition() *et.Json {
 	switch t {
 	case TpKey:
 		return &et.Json{
-			"default": "-1",
+			"default": t.Default(),
 		}
 	case TpText:
 		return &et.Json{
-			"default": "",
-			"max":     0,
-		}
-	case TpShortText:
-		return &et.Json{
-			"default": "",
+			"default": t.Default(),
 			"max":     250,
 		}
-	case TpPassword:
+	case TpMemo:
 		return &et.Json{
-			"default": "",
-			"max":     80,
-			"width":   16,
-			"method":  "md5",
+			"default": t.Default(),
+			"max":     0,
 		}
 	case TpNumber:
 		return &et.Json{
-			"default": 0,
+			"default": t.Default(),
 			"format":  "number",
 			"min":     0,
 			"max":     0,
 		}
-	case TpSelect:
+	case TpSelect: //check
 		return &et.Json{
-			"default": et.Json{"_id": "", "name": "", "color": ""},
-			"options": []et.Json{
-				{"_id": "not_started", "name": "No started", "color": "#FF0000"},
-				{"_id": "in_progress", "name": "In progress", "color": "#FFFF00"},
-				{"_id": "done", "name": "Done", "color": "#00FF00"},
-			},
-			"sort": false,
+			"default": t.Default(),
+			"options": []et.Json{},
+			"sort":    false,
 		}
-	case TpMultiSelect:
+	case TpMultiSelect: //Check
 		return &et.Json{
-			"default": et.Json{"_id": "", "name": "", "color": ""},
-			"options": []et.Json{
-				{"_id": "not_started", "name": "No started", "color": "#FF0000"},
-				{"_id": "in_progress", "name": "In progress", "color": "#FFFF00"},
-				{"_id": "done", "name": "Done", "color": "#00FF00"},
-			},
-			"sort": false,
+			"default": t.Default(),
+			"options": []et.Json{},
+			"sort":    false,
 		}
-	case TpStatus:
+	case TpStatus: //Type
 		return &et.Json{
-			"default": et.Json{"_id": "", "main": "", "name": "", "color": ""},
-			"options": []et.Json{
-				{"_id": "-1", "main": "State", "name": "System", "color": "#FF0000"},
-				{"_id": "0", "main": "State", "name": "Active", "color": "#00FF00"},
-				{"_id": "1", "main": "State", "name": "Archived", "color": "#FFFF00"},
-				{"_id": "2", "main": "State", "name": "Cancelled", "color": "#FF0000"},
-				{"_id": "-2", "main": "To do", "name": "To delete", "color": "#FF0000"},
-			},
-			"sort": false,
+			"default": t.Default(),
+			"options": []et.Json{},
+			"sort":    false,
 		}
 	case TpDate:
 		return &et.Json{
-			"default":     "",
+			"default":     t.Default(),
 			"format_data": "date",
 			"time_zone":   "12_hour",
 		}
 	case TpPerson:
 		return &et.Json{
-			"default": "",
+			"default": t.Default(),
 		}
 	case TpFile:
 		return &et.Json{
-			"default": "",
+			"default": t.Default(),
 		}
 	case TpCheckbox:
 		return &et.Json{
-			"default": false,
+			"default": t.Default(),
 		}
 	case TpURL:
 		return &et.Json{
-			"default":       "",
+			"default":       t.Default(),
 			"show_full_url": false,
 		}
 	case TpEmail:
 		return &et.Json{
-			"default": "",
+			"default": t.Default(),
 		}
 	case TpPhone:
 		return &et.Json{
-			"default": "",
+			"default": t.Default(),
 		}
 	case TpFormula:
 		return &et.Json{
-			"default":       "",
+			"default":       t.Default(),
 			"formula":       "",
 			"number_format": "number",
 			"show_as":       "number",
 		}
+	case TpFunction:
+		return &et.Json{
+			"default":  t.Default(),
+			"function": "",
+		}
 	case TpRelation:
 		return &et.Json{
-			"default":             "",
+			"default":             t.Default(),
 			"related_to":          "",
 			"limit":               0,
 			"show_on_actividades": false,
@@ -329,9 +320,14 @@ func (t TypeData) Definition() *et.Json {
 		return &et.Json{
 			"default": et.Json{},
 		}
-	case TpFunction:
+	case TpArray:
 		return &et.Json{
-			"default": "",
+			"default": []et.Json{},
+			"limit":   0,
+		}
+	case TpSerie:
+		return &et.Json{
+			"default": 0,
 		}
 	}
 	return &et.Json{
