@@ -159,6 +159,20 @@ func (l *Linq) Debug() *Linq {
 	return l
 }
 
+// Set user to linq
+func (l *Linq) User(val et.Json) *Linq {
+	l.Command.User = val
+
+	return l
+}
+
+// Set project to linq
+func (l *Linq) Project(val et.Json) *Linq {
+	l.Command.Project = val
+
+	return l
+}
+
 func init() {
 	dbs = []*Database{}
 	schemas = []*Schema{}

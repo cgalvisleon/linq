@@ -1,22 +1,23 @@
 package linq
 
 import (
+	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/strs"
 )
 
 // DefineColumn define a column in the model
-func (m *Model) DefineColum(name, description string, typeData TypeData, _default interface{}) *Column {
-	return newColumn(m, name, description, TpColumn, typeData, _default)
+func (m *Model) DefineColum(name, description string, typeData TypeData, definition et.Json) *Column {
+	return newColumn(m, name, description, TpColumn, typeData, definition)
 }
 
 // DefineAtrib define a atrib in the model
-func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default interface{}) *Column {
+func (m *Model) DefineAtrib(name, description string, typeData TypeData, definition et.Json) *Column {
 	source := COlumn(m, SourceField)
 	if source == nil {
-		source = m.DefineColum(SourceField, "Source field", TpJson, _default)
+		source = m.DefineColum(SourceField, "Source field", TpJson, *TpJson.Definition())
 	}
 
-	result := newColumn(m, name, description, TpAtrib, typeData, _default)
+	result := newColumn(m, name, description, TpAtrib, typeData, definition)
 
 	return result
 }
@@ -80,7 +81,7 @@ func (m *Model) DefineForeignKey(foreignKey []string, parentModel *Model, parent
 
 // Define reference to object in the model
 func (m *Model) DefineRollup(name string, foreignKey []string, parentModel *Model, parentKey []string, _select []string, calculate TpCaculate) *Column {
-	result := newColumn(m, strs.Uppcase(name), "", TpDetail, TpRollup, TpRollup.Default())
+	result := newColumn(m, strs.Uppcase(name), "", TpDetail, TpRollup, *TpRollup.Definition())
 	if result == nil {
 		return nil
 	}
@@ -102,7 +103,7 @@ func (m *Model) DefineRollup(name string, foreignKey []string, parentModel *Mode
 
 // Define a detail collumn to the model
 func (m *Model) DefineDetail(name, description string, _default interface{}, funcDetail FuncDetail) *Column {
-	result := newColumn(m, name, description, TpDetail, TpFunction, _default)
+	result := newColumn(m, name, description, TpDetail, TpFunction, *TpFunction.Definition())
 	result.FuncDetail = funcDetail
 
 	m.Details = append(m.Details, result)
@@ -112,7 +113,7 @@ func (m *Model) DefineDetail(name, description string, _default interface{}, fun
 
 // Define a sql column to the model
 func (m *Model) DefineFormula(name, formula string) *Column {
-	result := m.DefineAtrib(name, "", TpFormula, TpFormula.Default())
+	result := newColumn(m, name, "", TpDetail, TpFormula, *TpFormula.Definition())
 	result.Formula = formula
 
 	return result

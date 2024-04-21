@@ -12,6 +12,7 @@ const (
 	TpKey TypeData = iota
 	TpText
 	TpShortText
+	TpPassword
 	TpNumber
 	TpSelect
 	TpMultiSelect
@@ -44,6 +45,8 @@ func (t TypeData) String() string {
 		return "Text"
 	case TpShortText:
 		return "Short text"
+	case TpPassword:
+		return "Password"
 	case TpNumber:
 		return "Number"
 	case TpSelect:
@@ -100,6 +103,8 @@ func (t TypeData) Default() interface{} {
 		return ""
 	case TpShortText:
 		return ""
+	case TpPassword:
+		return ""
 	case TpNumber:
 		return 0
 	case TpSelect:
@@ -109,7 +114,7 @@ func (t TypeData) Default() interface{} {
 	case TpStatus:
 		return et.Json{
 			"_id":  "0",
-			"main": "Activo",
+			"main": "State",
 			"name": "Activo",
 		}
 	case TpDate:
@@ -185,23 +190,36 @@ func (t TypeData) Mutate(val interface{}) {
 func (t TypeData) Definition() *et.Json {
 	switch t {
 	case TpKey:
-		return &et.Json{}
+		return &et.Json{
+			"default": "-1",
+		}
 	case TpText:
 		return &et.Json{
-			"max": 0,
+			"default": "",
+			"max":     0,
 		}
 	case TpShortText:
 		return &et.Json{
-			"max": 250,
+			"default": "",
+			"max":     250,
+		}
+	case TpPassword:
+		return &et.Json{
+			"default": "",
+			"max":     80,
+			"width":   16,
+			"method":  "md5",
 		}
 	case TpNumber:
 		return &et.Json{
-			"format": "number",
-			"min":    0,
-			"max":    0,
+			"default": 0,
+			"format":  "number",
+			"min":     0,
+			"max":     0,
 		}
 	case TpSelect:
 		return &et.Json{
+			"default": et.Json{"_id": "", "name": "", "color": ""},
 			"options": []et.Json{
 				{"_id": "not_started", "name": "No started", "color": "#FF0000"},
 				{"_id": "in_progress", "name": "In progress", "color": "#FFFF00"},
@@ -211,6 +229,7 @@ func (t TypeData) Definition() *et.Json {
 		}
 	case TpMultiSelect:
 		return &et.Json{
+			"default": et.Json{"_id": "", "name": "", "color": ""},
 			"options": []et.Json{
 				{"_id": "not_started", "name": "No started", "color": "#FF0000"},
 				{"_id": "in_progress", "name": "In progress", "color": "#FFFF00"},
@@ -220,72 +239,100 @@ func (t TypeData) Definition() *et.Json {
 		}
 	case TpStatus:
 		return &et.Json{
+			"default": et.Json{"_id": "", "main": "", "name": "", "color": ""},
 			"options": []et.Json{
-				{"_id": "-1", "main": "", "name": "System"},
-				{"_id": "0", "main": "State", "name": "Active"},
-				{"_id": "1", "main": "State", "name": "Archived"},
-				{"_id": "2", "main": "State", "name": "Cancelled"},
-				{"_id": "-2", "main": "To do", "name": "To delete"},
+				{"_id": "-1", "main": "State", "name": "System", "color": "#FF0000"},
+				{"_id": "0", "main": "State", "name": "Active", "color": "#00FF00"},
+				{"_id": "1", "main": "State", "name": "Archived", "color": "#FFFF00"},
+				{"_id": "2", "main": "State", "name": "Cancelled", "color": "#FF0000"},
+				{"_id": "-2", "main": "To do", "name": "To delete", "color": "#FF0000"},
 			},
 			"sort": false,
 		}
 	case TpDate:
 		return &et.Json{
+			"default":     "",
 			"format_data": "date",
 			"time_zone":   "12_hour",
 		}
 	case TpPerson:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	case TpFile:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	case TpCheckbox:
-		return &et.Json{}
+		return &et.Json{
+			"default": false,
+		}
 	case TpURL:
 		return &et.Json{
+			"default":       "",
 			"show_full_url": false,
 		}
 	case TpEmail:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	case TpPhone:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	case TpFormula:
 		return &et.Json{
+			"default":       "",
 			"formula":       "",
 			"number_format": "number",
 			"show_as":       "number",
 		}
 	case TpRelation:
 		return &et.Json{
+			"default":             "",
 			"related_to":          "",
 			"limit":               0,
 			"show_on_actividades": false,
 		}
 	case TpRollup:
 		return &et.Json{
+			"default":    "",
 			"related_to": "",
 			"property":   "",
 			"calculate":  "",
 		}
 	case TpCreatedTime:
 		return &et.Json{
+			"default":     "",
 			"format_data": "date",
 			"time_zone":   "12_hour",
 		}
 	case TpCreatedBy:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	case TpLastEditedTime:
 		return &et.Json{
+			"default":     "",
 			"format_data": "date",
 			"time_zone":   "12_hour",
 		}
 	case TpLastEditedBy:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	case TpProject:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	case TpJson:
-		return &et.Json{}
+		return &et.Json{
+			"default": et.Json{},
+		}
 	case TpFunction:
-		return &et.Json{}
+		return &et.Json{
+			"default": "",
+		}
 	}
 	return &et.Json{
 		"default": "",

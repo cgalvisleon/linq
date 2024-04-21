@@ -56,8 +56,8 @@ type Column struct {
 	Description string
 	TypeColumn  TypeColumn
 	TypeData    TypeData
+	Definition  et.Json
 	Default     interface{}
-	Definition  *et.Json
 	RelationTo  *Relation
 	FuncDetail  FuncDetail
 	Formula     string
@@ -107,7 +107,7 @@ func COlumn(model *Model, name string) *Column {
 }
 
 // NewColumn create a new column
-func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default interface{}) *Column {
+func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, definition et.Json) *Column {
 	tag := name
 	name = nAme(name)
 	result := COlumn(model, name)
@@ -122,8 +122,8 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		Description: description,
 		TypeColumn:  typeColumm,
 		TypeData:    typeData,
-		Default:     _default,
-		Definition:  typeData.Definition(),
+		Definition:  definition,
+		Default:     definition.Get("default"),
 	}
 
 	if !model.UseStatus {
@@ -170,8 +170,8 @@ func (c *Column) definition() et.Json {
 		"description": c.Description,
 		"type_column": c.TypeColumn.String(),
 		"type_data":   c.TypeData.String(),
-		"default":     c.Default,
 		"definition":  c.Definition,
+		"default":     c.Default,
 		"relationTo":  c.RelationTo.Definition(),
 		"formula":     c.Formula,
 		"primaryKey":  c.PrimaryKey,

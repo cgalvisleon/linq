@@ -1,10 +1,12 @@
 package linq
 
+import "github.com/cgalvisleon/et/et"
+
 type COl struct {
 	Name        string
 	Description string
 	TypeData    TypeData
-	DefValue    interface{}
+	Definition  et.Json
 }
 
 type FKey struct {
@@ -67,10 +69,10 @@ func MOdel(def *Definition) *Model {
 	schema := NewSchema(def.Schema, "")
 	result := NewModel(schema, def.Name, def.Description, def.Version)
 	for _, col := range def.Columns {
-		result.DefineColum(col.Name, col.Description, col.TypeData, col.DefValue)
+		result.DefineColum(col.Name, col.Description, col.TypeData, col.Definition)
 	}
 	for _, col := range def.Atribs {
-		result.DefineAtrib(col.Name, col.Description, col.TypeData, col.DefValue)
+		result.DefineAtrib(col.Name, col.Description, col.TypeData, col.Definition)
 	}
 	for _, idx := range def.Indexes {
 		result.DefineIndex(idx, true)

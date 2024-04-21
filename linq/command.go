@@ -1,8 +1,11 @@
 package linq
 
 import (
+	"time"
+
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
+	"github.com/cgalvisleon/et/utility"
 )
 
 // TypeCommand struct to use in linq
@@ -40,6 +43,8 @@ type Lcommand struct {
 	Source      *et.Json
 	Old         *et.Json
 	New         *et.Json
+	User        et.Json
+	Project     et.Json
 }
 
 // Definition method to use in linq
@@ -51,6 +56,48 @@ func (l *Lcommand) Definition() et.Json {
 		"source":      l.Source,
 		"old":         l.Old,
 		"new":         l.New,
+	}
+}
+
+// Return default value for column
+func (l *Lcommand) Default(col *Column) interface{} {
+	switch col.TypeData {
+	case TpStatus:
+		return col.TypeData.Default()
+	case TpCreatedTime:
+		return time.Now()
+	case TpCreatedBy:
+		return l.User
+	case TpLastEditedTime:
+		return time.Now()
+	case TpLastEditedBy:
+		return l.User
+	case TpProject:
+		return l.Project
+	}
+
+	return col.Default
+}
+
+// Return value from column
+func (l *Lcommand) Value(col *Column, value interface{}) (interface{}, error) {
+	switch col.TypeData {
+	case TpPassword:
+		modelStr := col.Definition.Str("model")
+		model := utility.GetCryptoType(modelStr)
+		str, ok := value.(string)
+		if !ok {
+			return "", logs.Errorf("Value is not a string")
+		}
+
+		result, err := utility.Encrypt(str, model)
+		if err != nil {
+			return "", err
+		}
+
+		return result, nil
+	default:
+		return value, nil
 	}
 }
 
@@ -118,7 +165,7 @@ func (c *Lcommand) consolidate() {
 		var tp TypeData
 		tp.Mutate(value)
 
-		return model.DefineAtrib(name, "", tp, tp.Default())
+		return model.DefineAtrib(name, "", tp, *tp.Definition())
 	}
 
 	properties := make(map[string]bool)
@@ -129,8 +176,9 @@ func (c *Lcommand) consolidate() {
 			}
 
 			key := col.Low()
-			def := col.Default
+			def := c.Default(col)
 			val := c.Data.Get(key)
+			val, _ = c.Value(col, val)
 			if val == nil {
 				val = def
 			}

@@ -106,6 +106,7 @@ type Model struct {
 	Details           []*Column
 	Hidden            []*Column
 	Required          []*Column
+	Password          []*Column
 	Source            *Column
 	UseStatus         bool
 	UseSource         bool
@@ -154,6 +155,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		Details:           []*Column{},
 		Hidden:            []*Column{},
 		Required:          []*Column{},
+		Password:          []*Column{},
 		Source:            nil,
 		UseStatus:         false,
 		UseSource:         false,
@@ -176,7 +178,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 	}
 
 	idT := nAme(IdTField)
-	result.DefineColum(idT, "_idT of the table", TpKey, "-1")
+	result.DefineColum(idT, "_idT of the table", TpKey, *TpKey.Definition())
 	result.AddUnique(idT, true)
 
 	schema.AddModel(result)
