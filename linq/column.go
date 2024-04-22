@@ -109,7 +109,7 @@ func COlumn(model *Model, name string) *Column {
 
 // NewColumn create a new column
 func newColumn(model *Model, name, description string, typeColumm TypeColumn, typeData TypeData, _default interface{}) *Column {
-	tag := name
+	tag := strs.Lowcase(name)
 	name = nAme(name)
 	result := COlumn(model, name)
 	if result != nil {
@@ -170,6 +170,16 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 
 // Describe carapteristics of column
 func (c *Column) definition() et.Json {
+	relationTo := et.Json{}
+	if c.RelationTo != nil {
+		relationTo = c.RelationTo.Definition()
+	}
+
+	required := et.Json{}
+	if c.Required != nil {
+		required = c.Required.Definition()
+	}
+
 	return et.Json{
 		"name":        c.Name,
 		"tag":         c.Tag,
@@ -178,14 +188,15 @@ func (c *Column) definition() et.Json {
 		"type_data":   c.TypeData.String(),
 		"definition":  c.Definition,
 		"default":     c.Default,
-		"relationTo":  c.RelationTo.Definition(),
+		"relationTo":  relationTo,
 		"formula":     c.Formula,
 		"primaryKey":  c.PrimaryKey,
 		"foreignKey":  c.ForeignKey,
 		"indexed":     c.Indexed,
 		"unique":      c.Unique,
-		"hidden":      c.IsHidden(),
-		"required":    c.Required.Definition(),
+		"hidden":      c.Hidden,
+		"sourceField": c.SourceField,
+		"required":    required,
 	}
 }
 
@@ -219,11 +230,6 @@ func (c *Column) PrimaryKeys() []string {
 	}
 
 	return result
-}
-
-// IsHidden return if column is hidden
-func (c *Column) IsHidden() bool {
-	return c.Hidden
 }
 
 // Hidden set hidden column

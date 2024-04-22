@@ -238,7 +238,7 @@ func (t TypeData) Definition() *et.Json {
 	case TpDate:
 		return &et.Json{
 			"default":     t.Default(),
-			"format_data": "date",
+			"format_data": "date time",
 			"time_zone":   "12_hour",
 		}
 	case TpPerson:

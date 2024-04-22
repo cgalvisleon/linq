@@ -49,9 +49,9 @@ type Constraint struct {
 // Definition return a json with the definition of the constraint
 func (c *Constraint) Definition() et.Json {
 	return et.Json{
-		"foreignKey":  c.ForeignKey,
-		"parentModel": c.Parent.Name,
-		"parentKey":   c.ParentKey,
+		"foreignKey": c.ForeignKey,
+		"parent":     c.Parent.Name,
+		"parentKey":  c.ParentKey,
 	}
 }
 
@@ -130,7 +130,9 @@ type Model struct {
 
 // NewModel create a new model
 func NewModel(schema *Schema, name, description string, version int) *Model {
-	table := strs.Append(schema.Name, nAme(name), ".")
+	tag := strs.Lowcase(name)
+	name = nAme(name)
+	table := strs.Append(schema.Name, name, ".")
 
 	for _, v := range models {
 		if strs.Uppcase(v.Table) == strs.Uppcase(table) {
@@ -141,8 +143,8 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 	result := &Model{
 		Schema:            schema,
 		Db:                schema.Db,
-		Name:              nAme(name),
-		Tag:               name,
+		Name:              name,
+		Tag:               tag,
 		Table:             table,
 		Description:       description,
 		Columns:           []*Column{},
@@ -176,7 +178,7 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 	}
 
 	idT := nAme(IdTField)
-	result.DefineColum(idT, "_idT of the table", TpKey, *TpKey.Definition())
+	result.DefineColum(idT, "_idT of the table", TpKey, TpKey.Default())
 	result.AddUnique(idT, true)
 
 	schema.AddModel(result)
@@ -224,16 +226,23 @@ func (m *Model) Definition() et.Json {
 		relationTo = append(relationTo, v.Name)
 	}
 
+	var details []string = []string{}
+	for _, v := range m.Details {
+		details = append(details, v.Name)
+	}
+
 	result := et.Json{
 		"name":        m.Name,
-		"description": m.Description,
+		"tag":         m.Tag,
 		"table":       m.Table,
+		"description": m.Description,
 		"columns":     columns,
 		"primaryKeys": primaryKeys,
 		"foreignKey":  foreignKey,
 		"index":       index,
 		"unique":      unique,
 		"relationTo":  relationTo,
+		"details":     details,
 	}
 
 	return result

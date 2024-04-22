@@ -549,8 +549,8 @@ func ddlForeignKeys(model *linq.Model) string {
 	var result string
 	for _, ref := range model.ForeignKey {
 		schema := strs.Uppcase(model.Schema.Name)
-		key := strs.Replace(model.Table, ".", "_")
-		key = strs.Replace(key, "-", "_") + "_pkey"
+		key := strs.Replace(model.Table, ".", "_") + "_" + strings.Join(ref.ForeignKey, "_")
+		key = strs.Replace(key, "-", "_") + "_fkey"
 		key = strs.Lowcase(key)
 		def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s);`, strs.Uppcase(model.Table), key, strings.Join(ref.ForeignKey, ", "), ref.Parent.Table, strings.Join(ref.ParentKey, ", "))
 		def = strs.Format(`SELECT linq.create_constraint_if_not_exists('%s', '%s', '%s', '%s');`, schema, model.Name, key, def)
