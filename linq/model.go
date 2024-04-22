@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/cgalvisleon/et/et"
+	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -336,6 +337,8 @@ func (m *Model) AddPrimaryKey(name string) *Column {
 
 		return col
 	}
+
+	logs.Debug("AddPrimaryKey", name)
 
 	return nil
 }

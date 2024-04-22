@@ -89,7 +89,7 @@ func atribName(name string) string {
 func IndexColumn(model *Model, name string) int {
 	result := -1
 	for i, col := range model.Columns {
-		if strs.Uppcase(col.Name) == name {
+		if strs.Uppcase(col.Name) == strs.Uppcase(name) {
 			return i
 		}
 	}
