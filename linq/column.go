@@ -169,7 +169,7 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 }
 
 // Describe carapteristics of column
-func (c *Column) definition() et.Json {
+func (c *Column) DEfinition() et.Json {
 	relationTo := et.Json{}
 	if c.RelationTo != nil {
 		relationTo = c.RelationTo.Definition()
@@ -181,6 +181,8 @@ func (c *Column) definition() et.Json {
 	}
 
 	return et.Json{
+		"schema":      c.Model.Schema.Name,
+		"model":       c.Model.Name,
 		"name":        c.Name,
 		"tag":         c.Tag,
 		"description": c.Description,

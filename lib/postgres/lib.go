@@ -52,13 +52,13 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 		return nil, err
 	}
 
-	sql = ddlRecicling()
+	sql = ddlRecycling()
 	_, err = d.DB.Exec(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	sql = ddlStrucs()
+	sql = ddlModels()
 	_, err = d.DB.Exec(sql)
 	if err != nil {
 		return nil, err
@@ -389,4 +389,15 @@ func (d *Postgres) DCL(command string, params et.Json) error {
 func (d *Postgres) MutationSql(l *linq.Linq) string {
 
 	return ""
+}
+
+func (d *Postgres) Sql(command string) string {
+	switch command {
+	case "next_serie":
+		return `SELECT linq.nextserie($1) AS INDEX`
+	case "set_serie":
+		return `SELECT linq.setserie($1, $2) AS INDEX`
+	default:
+		return ""
+	}
 }

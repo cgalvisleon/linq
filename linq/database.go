@@ -99,6 +99,8 @@ func (d *Database) InitModel(model *Model) error {
 		return err
 	}
 
+	model.ItIsBuilt = true
+
 	return nil
 }
 

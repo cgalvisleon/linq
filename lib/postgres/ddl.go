@@ -231,7 +231,7 @@ func ddlSync() string {
 }
 
 // ddlRecicling return sql recicling ddl
-func ddlRecicling() string {
+func ddlRecycling() string {
 	return `
 	-- DROP TABLE IF EXISTS linq.RECYCLING CASCADE;
 	CREATE SCHEMA IF NOT EXISTS linq;
@@ -270,7 +270,7 @@ func ddlRecicling() string {
   END;
   $$ LANGUAGE plpgsql;
 
-	CREATE OR REPLACE FUNCTION ERASE()
+	CREATE OR REPLACE FUNCTION linq.ERASE()
   RETURNS
     TRIGGER AS $$
   BEGIN
@@ -281,34 +281,34 @@ func ddlRecicling() string {
 	`
 }
 
-func ddlStrucs() string {
+func ddlModels() string {
 	return `
-	-- DROP TABLE IF EXISTS linq.STRUCTS CASCADE;
+	-- DROP TABLE IF EXISTS linq.MODELS CASCADE;
 	CREATE SCHEMA IF NOT EXISTS linq;
 
-  CREATE TABLE IF NOT EXISTS linq.STRUCTS(
+  CREATE TABLE IF NOT EXISTS linq.MODELS(
 		TABLE_SCHEMA VARCHAR(80) DEFAULT '',
     TABLE_NAME VARCHAR(80) DEFAULT '',
-    SQL TEXT DEFAULT '',
+		DEFINTION JSONB DEFAULT '{}',
     INDEX SERIAL,
 		PRIMARY KEY(TABLE_SCHEMA, TABLE_NAME)
 	);
-  CREATE INDEX IF NOT EXISTS STRUCTS_INDEX_IDX ON linq.STRUCTS(INDEX);
-	CREATE INDEX IF NOT EXISTS STRUCTS_SCHEMA_IDX ON linq.STRUCTS(TABLE_SCHEMA);
-	CREATE INDEX IF NOT EXISTS STRUCTS_NAME_IDX ON linq.STRUCTS(TABLE_NAME);
+  CREATE INDEX IF NOT EXISTS STRUCTS_INDEX_IDX ON linq.MODELS(INDEX);
+	CREATE INDEX IF NOT EXISTS STRUCTS_SCHEMA_IDX ON linq.MODELS(TABLE_SCHEMA);
+	CREATE INDEX IF NOT EXISTS STRUCTS_NAME_IDX ON linq.MODELS(TABLE_NAME);
 
-	CREATE OR REPLACE FUNCTION linq.setstruct(
+	CREATE OR REPLACE FUNCTION linq.setmodel(
 	VSCHEMA VARCHAR(80),
 	VNAME VARCHAR(80),
-	VSQL TEXT)
+	VDEFINTION JSONB)
 	RETURNS INT AS $$
 	DECLARE
 	 result INT;
 	BEGIN
-	 INSERT INTO linq.STRUCTS AS A (TABLE_SCHEMA, TABLE_NAME, SQL)
-	 SELECT VSCHEMA, VNAME, VSQL
+	 INSERT INTO linq.MODELS AS A (TABLE_SCHEMA, TABLE_NAME, DEFINTION)
+	 SELECT VSCHEMA, VNAME, VDEFINTION
 	 ON CONFLICT (TABLE_SCHEMA, TABLE_NAME) DO UPDATE SET
-	 SQL = VSQL
+	 DEFINTION = VDEFINTION
 	 RETURNING INDEX INTO result;
 
 	 RETURN COALESCE(result, 0);
@@ -367,6 +367,19 @@ func ddlSeries() string {
 	 SELECT VALUE INTO result
 	 FROM linq.SERIES
 	 WHERE SERIE = tag LIMIT 1;
+
+	 RETURN COALESCE(result, 0);
+	END;
+	$$ LANGUAGE plpgsql;
+
+	CREATE OR REPLACE FUNCTION linq.delserie(tag VARCHAR(250))
+	RETURNS BIGINT AS $$
+	DECLARE
+	 result BIGINT;
+	BEGIN
+	 DELETE FROM linq.SERIES
+	 WHERE SERIE = tag
+	 RETURNING VALUE INTO result;
 
 	 RETURN COALESCE(result, 0);
 	END;
@@ -560,6 +573,63 @@ func ddlForeignKeys(model *linq.Model) string {
 	return result
 }
 
+// ddlSetSync return sql set sync ddl
+func ddlSetSync(model *linq.Model) string {
+	result := linq.SQLDDL(`
+	DROP TRIGGER IF EXISTS SYNC_INSERT ON $1 CASCADE;
+	CREATE TRIGGER SYNC_INSERT
+	BEFORE INSERT ON $1
+	FOR EACH ROW
+	EXECUTE PROCEDURE linq.SYNC_INSERT();
+
+	DROP TRIGGER IF EXISTS SYNC_UPDATE ON $1 CASCADE;
+	CREATE TRIGGER SYNC_UPDATE
+	BEFORE UPDATE ON $1
+	FOR EACH ROW
+	EXECUTE PROCEDURE linq.SYNC_UPDATE();
+
+	DROP TRIGGER IF EXISTS SYNC_DELETE ON $1 CASCADE;
+	CREATE TRIGGER SYNC_DELETE
+	BEFORE DELETE ON $1
+	FOR EACH ROW
+	EXECUTE PROCEDURE linq.SYNC_DELETE();`, strs.Uppcase(model.Table))
+
+	result = strs.Replace(result, "\t", "")
+
+	return result
+}
+
+func ddlSetRecycling(model *linq.Model) string {
+	result := linq.SQLDDL(`	
+	DROP TRIGGER IF EXISTS RECYCLING ON $1 CASCADE;
+	CREATE TRIGGER RECYCLING
+	AFTER UPDATE ON $1
+	FOR EACH ROW
+	EXECUTE PROCEDURE linq.RECYCLING();
+
+	DROP TRIGGER IF EXISTS ERASE ON $1 CASCADE;
+	CREATE TRIGGER ERASE
+	AFTER DELETE ON $1
+	FOR EACH ROW
+	EXECUTE PROCEDURE linq.ERASE();`, strs.Uppcase(model.Table))
+
+	result = strs.Replace(result, "\t", "")
+
+	return result
+}
+
+func ddlSetModel(model *linq.Model) string {
+	schema := model.Schema.Name
+	table := model.Name
+	definition := model.Definition().ToString()
+	result := linq.SQLDDL(`	
+	SELECT linq.setmodel('$1', '$2', '$3');`, schema, table, definition)
+
+	result = strs.Replace(result, "\t", "")
+
+	return result
+}
+
 // ddlTable return table ddl
 func ddlTable(model *linq.Model) string {
 	var result string
@@ -585,9 +655,16 @@ func ddlTable(model *linq.Model) string {
 	result = strs.Append(result, schema, "\n")
 	table := strs.Format("CREATE TABLE IF NOT EXISTS %s (\n%s);", model.Table, columns)
 	result = strs.Append(result, table, "\n")
-	result = strs.Append(result, indexs, "\n")
+	result = strs.Append(result, indexs, "\n\n")
 	foreign := ddlForeignKeys(model)
-	result = strs.Append(result, foreign, "\n")
+	result = strs.Append(result, foreign, "\n\n")
+	sync := ddlSetSync(model)
+	result = strs.Append(result, sync, "\n\n")
+	recycle := ddlSetRecycling(model)
+	result = strs.Append(result, recycle, "\n\n")
+	model.DDL = result
+	define := ddlSetModel(model)
+	result = strs.Append(result, define, "\n\n")
 
 	return result
 }

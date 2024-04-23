@@ -77,7 +77,7 @@ type Index struct {
 	Asc    bool
 }
 
-func (i *Index) Describe() et.Json {
+func (i *Index) Definition() et.Json {
 	return et.Json{
 		"column": i.Column.Name,
 		"asc":    i.Asc,
@@ -180,7 +180,6 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 
 	idT := nAme(IdTField)
 	result.DefineColum(idT, "_idT of the table", TpKey, TpKey.Default())
-	result.AddUnique(idT, true)
 
 	schema.AddModel(result)
 
@@ -199,7 +198,7 @@ func (m *Model) Save() error {
 func (m *Model) Definition() et.Json {
 	var columns []et.Json = []et.Json{}
 	for _, v := range m.Columns {
-		columns = append(columns, v.definition())
+		columns = append(columns, v.DEfinition())
 	}
 
 	var primaryKeys []string = []string{}
@@ -214,17 +213,17 @@ func (m *Model) Definition() et.Json {
 
 	var index []et.Json = []et.Json{}
 	for _, v := range m.Index {
-		index = append(index, v.Describe())
+		index = append(index, v.Definition())
 	}
 
 	var unique []et.Json = []et.Json{}
 	for _, v := range m.Unique {
-		unique = append(unique, v.Describe())
+		unique = append(unique, v.Definition())
 	}
 
-	var relationTo []string = []string{}
+	var relationTo []et.Json = []et.Json{}
 	for _, v := range m.RelationTo {
-		relationTo = append(relationTo, v.Name)
+		relationTo = append(relationTo, v.DEfinition())
 	}
 
 	var details []string = []string{}
@@ -232,18 +231,47 @@ func (m *Model) Definition() et.Json {
 		details = append(details, v.Name)
 	}
 
+	var hiddens []string = []string{}
+	for _, v := range m.Hidden {
+		hiddens = append(hiddens, v.Name)
+	}
+
+	var requireds []string = []string{}
+	for _, v := range m.Required {
+		requireds = append(requireds, v.Name)
+	}
+
+	var source string = ""
+	if m.Source != nil {
+		source = m.Source.Name
+	}
+
 	result := et.Json{
-		"name":        m.Name,
-		"tag":         m.Tag,
-		"table":       m.Table,
-		"description": m.Description,
-		"columns":     columns,
-		"primaryKeys": primaryKeys,
-		"foreignKey":  foreignKey,
-		"index":       index,
-		"unique":      unique,
-		"relationTo":  relationTo,
-		"details":     details,
+		"schema":            m.Schema.Name,
+		"name":              m.Name,
+		"tag":               m.Tag,
+		"table":             m.Table,
+		"description":       m.Description,
+		"columns":           columns,
+		"primaryKeys":       primaryKeys,
+		"foreignKey":        foreignKey,
+		"index":             index,
+		"unique":            unique,
+		"relationTo":        relationTo,
+		"details":           details,
+		"hidden":            hiddens,
+		"requireds":         requireds,
+		"source":            source,
+		"useStatus":         m.UseStatus,
+		"useSource":         m.UseSource,
+		"useCreatedTime":    m.UseCreatedTime,
+		"useCreatedBy":      m.UseCreatedBy,
+		"useLastEditedTime": m.UseLastEditedTime,
+		"useLastEditedBy":   m.UseLastEditedBy,
+		"useProject":        m.UseProject,
+		"integrity":         m.Integrity,
+		"itIsBuilt":         m.ItIsBuilt,
+		"version":           m.Version,
 	}
 
 	return result
@@ -357,6 +385,7 @@ func (m *Model) AddForeignKey(foreignKey []string, parentModel *Model, parentKey
 			return nil
 		}
 
+		parentModel.AddRelationTo(colA)
 		colA.ForeignKey = true
 	}
 
@@ -377,4 +406,14 @@ func (m *Model) AddForeignKey(foreignKey []string, parentModel *Model, parentKey
 	m.Save()
 
 	return result
+}
+
+func (m *Model) AddRelationTo(col *Column) {
+	for _, v := range m.RelationTo {
+		if v == col {
+			return
+		}
+	}
+
+	m.RelationTo = append(m.RelationTo, col)
 }

@@ -21,6 +21,16 @@ func (m *Model) DefineAtrib(name, description string, typeData TypeData, _defaul
 	return result
 }
 
+// Define a detail collumn to the model
+func (m *Model) DefineDetail(name, description string, _default interface{}, funcDetail FuncDetail) *Column {
+	result := newColumn(m, name, description, TpDetail, TpFunction, _default)
+	result.FuncDetail = funcDetail
+
+	m.Details = append(m.Details, result)
+
+	return result
+}
+
 // Define reference to object in the model
 func (m *Model) DefineRelation(name string, foreignKey []string, parentModel *Model, parentKey []string, _select []string, tpCalculate TpCaculate) *Column {
 	result := newColumn(m, name, "", TpDetail, TpRelation, TpRelation.Default())
@@ -65,16 +75,6 @@ func (m *Model) DefineRollup(name string, foreignKey []string, parentModel *Mode
 	return result
 }
 
-// Define a detail collumn to the model
-func (m *Model) DefineDetail(name, description string, _default interface{}, funcDetail FuncDetail) *Column {
-	result := newColumn(m, name, description, TpDetail, TpFunction, _default)
-	result.FuncDetail = funcDetail
-
-	m.Details = append(m.Details, result)
-
-	return result
-}
-
 // Define index in the model
 func (m *Model) DefineIndex(name string, asc bool) *Model {
 	m.AddIndex(name, asc)
@@ -101,6 +101,7 @@ func (m *Model) DefineHidden(cols []string) *Model {
 	return m
 }
 
+// Define required columns in the model
 func (m *Model) DefineRequired(col string, msg string) *Model {
 	column := COlumn(m, col)
 	if column != nil {

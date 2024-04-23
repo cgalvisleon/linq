@@ -43,4 +43,5 @@ type Driver interface {
 	DeleteSql(linq *Linq) string
 	MutationSql(linq *Linq) string
 	DCL(command string, params et.Json) error
+	Sql(command string) string
 }

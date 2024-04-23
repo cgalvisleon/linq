@@ -82,12 +82,12 @@ type Relation struct {
 // Definition return a json with the definition of the relation
 func (r *Relation) Definition() et.Json {
 	return et.Json{
-		"foreignKey":  r.ForeignKey,
-		"parentModel": r.Parent.Name,
-		"parentKey":   r.ParentKey,
-		"select":      r.Select,
-		"calculate":   r.Calculate.String(),
-		"limit":       r.Limit,
+		"foreignKey": r.ForeignKey,
+		"parent":     r.Parent.Name,
+		"parentKey":  r.ParentKey,
+		"select":     r.Select,
+		"calculate":  r.Calculate.String(),
+		"limit":      r.Limit,
 	}
 }
 
