@@ -156,12 +156,7 @@ func (l *Linq) query(sql string, args ...any) (et.Items, error) {
 	_query := SQLParse(sql, args...)
 	if l.debug {
 		logs.Debug(l.Definition().ToString())
-		logs.Debug(et.Json{
-			"sql":   query,
-			"args":  args,
-			"query": _query,
-		}.ToString())
-
+		logs.Debug(_query)
 	}
 
 	if !l.ItIsBuilt {
@@ -205,6 +200,11 @@ func (l *Linq) Exec() (et.Items, error) {
 		}
 	case TpUpdate:
 		err := c.Update()
+		if err != nil {
+			return et.Items{}, err
+		}
+	case TpUdsert:
+		err := c.Upsert()
 		if err != nil {
 			return et.Items{}, err
 		}

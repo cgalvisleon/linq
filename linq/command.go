@@ -15,6 +15,7 @@ const (
 	Tpnone TypeCommand = iota
 	TpInsert
 	TpUpdate
+	TpUdsert
 	TpDelete
 )
 
@@ -101,12 +102,10 @@ func (c *Lcommand) setSource(col *Column, value interface{}) {
 	}
 
 	if col.TypeColumn == TpColumn {
-		value = et.Quote(value)
 		c.Source.Set(col.Low(), value)
 	}
 
 	if col.TypeColumn == TpAtrib {
-		value = et.Quote(value)
 		_data := c.Source.Json(SourceField)
 		_data.Set(col.Low(), value)
 		c.Source.Set(SourceField, _data)
@@ -120,7 +119,6 @@ func (c *Lcommand) setNew(key string, value interface{}) {
 	}
 
 	if c.New.Get(key) == nil {
-		value = et.Quote(value)
 		c.New.Set(key, value)
 	}
 }
@@ -330,20 +328,12 @@ func (c *Lcommand) Insert() error {
 }
 
 // Execute update function
-func (c *Lcommand) Update() error {
-	current, err := c.curren()
-	if err != nil {
-		return err
-	}
-
-	if !current.Ok {
-		return nil
-	}
-
+func (c *Lcommand) update(current et.Items) error {
 	if current.Count > MaxUpdate {
 		return logs.Errorf("Update only allow %d items", MaxUpdate)
 	}
 
+	var err error
 	form := c.From
 	model := form.Model
 	ch := false
@@ -392,6 +382,34 @@ func (c *Lcommand) Update() error {
 	}
 
 	return nil
+}
+
+// Execute update function
+func (c *Lcommand) Update() error {
+	current, err := c.curren()
+	if err != nil {
+		return err
+	}
+
+	if !current.Ok {
+		return nil
+	}
+
+	return c.update(current)
+}
+
+// Execute update or insert function
+func (c *Lcommand) Upsert() error {
+	current, err := c.curren()
+	if err != nil {
+		return err
+	}
+
+	if !current.Ok {
+		return c.Insert()
+	}
+
+	return c.update(current)
 }
 
 // Execute delete function
@@ -477,6 +495,16 @@ func (m *Model) Update(data et.Json) *Linq {
 
 // Delete method to use in linq
 func (m *Model) Delete() *Linq {
+	l := From(m)
+	l.TypeQuery = TpCommand
+	l.Command.From = l.Froms[0]
+	l.Command.TypeCommand = TpDelete
+	l.Command.consolidate()
+
+	return l
+}
+
+func (m *Model) Upsert(data et.Json) *Linq {
 	l := From(m)
 	l.TypeQuery = TpCommand
 	l.Command.From = l.Froms[0]

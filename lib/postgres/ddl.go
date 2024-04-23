@@ -96,7 +96,6 @@ func ddlSync() string {
     TABLE_NAME VARCHAR(80) DEFAULT '',
     _IDT VARCHAR(80) DEFAULT '-1',
     ACTION VARCHAR(80) DEFAULT '',
-    _ID VARCHAR(80) DEFAULT '-1',
     _SYNC BOOLEAN DEFAULT FALSE,    
     INDEX SERIAL,
     PRIMARY KEY (TABLE_SCHEMA, TABLE_NAME, _IDT)
@@ -106,7 +105,6 @@ func ddlSync() string {
   CREATE INDEX IF NOT EXISTS SYNCS_TABLE_NAME_IDX ON linq.SYNCS(TABLE_NAME);
   CREATE INDEX IF NOT EXISTS SYNCS__IDT_IDX ON linq.SYNCS(_IDT);
   CREATE INDEX IF NOT EXISTS SYNCS_ACTION_IDX ON linq.SYNCS(ACTION);
-  CREATE INDEX IF NOT EXISTS SYNCS__ID_IDX ON linq.SYNCS(_ID);
   CREATE INDEX IF NOT EXISTS SYNCS__SYNC_IDX ON linq.SYNCS(_SYNC);
 
   CREATE OR REPLACE FUNCTION linq.SYNC_INSERT()
@@ -118,8 +116,8 @@ func ddlSync() string {
     IF NEW._IDT = '-1' THEN
       NEW._IDT = uuid_generate_v4();
 
-      INSERT INTO linq.SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
-      VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP, uuid_generate_v4());
+      INSERT INTO linq.SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION)
+      VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP);
 
       PERFORM pg_notify(
       'sync',
@@ -155,13 +153,12 @@ func ddlSync() string {
      IF NEW._IDT = '-1' THEN
        NEW._IDT = uuid_generate_v4();
      END IF;
-     INSERT INTO linq.SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION, _ID)
-     VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP, uuid_generate_v4())
+     INSERT INTO linq.SYNCS(TABLE_SCHEMA, TABLE_NAME, _IDT, ACTION)
+     VALUES (TG_TABLE_SCHEMA, TG_TABLE_NAME, NEW._IDT, TG_OP)
 		 ON CONFLICT(TABLE_SCHEMA, TABLE_NAME, _IDT) DO UPDATE SET
      DATE_UPDATE = NOW(),
      ACTION = TG_OP,
-     _SYNC = FALSE,
-     _ID = uuid_generate_v4();
+     _SYNC = FALSE;
 
      PERFORM pg_notify(
      'sync',
@@ -202,8 +199,7 @@ func ddlSync() string {
       UPDATE linq.SYNCS SET
       DATE_UPDATE = NOW(),
       ACTION = TG_OP,
-      _SYNC = FALSE,
-      _ID = uuid_generate_v4()
+      _SYNC = FALSE
       WHERE INDEX = VINDEX;
       
       PERFORM pg_notify(
