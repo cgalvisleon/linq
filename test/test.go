@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	test2()
+	test1()
 }
 
 func test1() {
@@ -126,5 +126,4 @@ func test2() {
 	r, ch := a.Merge(b)
 	logs.Debug(r.ToString())
 	logs.Debug(ch)
-
 }

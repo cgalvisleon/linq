@@ -361,14 +361,11 @@ func (c *Lcommand) update(current et.Items) error {
 		c.Old = &data
 		c.New, ch = data.Merge(new)
 
-		logs.Debug(c.Old.ToString())
-		logs.Debug(c.New.ToString())
-		logs.Debug(new.ToString())
-		logs.Debug(ch)
-
 		if !ch {
 			continue
 		}
+
+		logs.Debug(c.New.ToString())
 
 		err = c.beforeUpdate()
 		if err != nil {
