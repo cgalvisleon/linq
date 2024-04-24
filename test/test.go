@@ -8,6 +8,10 @@ import (
 )
 
 func main() {
+	test2()
+}
+
+func test1() {
 	drive := lib.DrivePostgres("localhost", 5432, "test")
 	// drive := lib.DriveSqlite("test.db")
 	db := linq.NewDatabase("database", "description", &drive)
@@ -65,24 +69,26 @@ func main() {
 	}
 
 	A := User
-	B := Modelo
-	_ = linq.From(A).
-		Join(A, B, A.C("_id").Eq(B.C("user_id"))).
-		Where(A.C("username").Eq("test")).
-		And(A.C("password").Eq("test")).
-		GroupBy(A.C("username"), A.C("password")).
-		OrderBy(A.C("username")).
-		Desc(A.C("password")).
-		Select().
-		Debug()
-		// First().
-		// Page(1, 10)
+	/*
+		B := Modelo
+		_ = linq.From(A).
+			Join(A, B, A.C("_id").Eq(B.C("user_id"))).
+			Where(A.C("username").Eq("test")).
+			And(A.C("password").Eq("test")).
+			GroupBy(A.C("username"), A.C("password")).
+			OrderBy(A.C("username")).
+			Desc(A.C("password")).
+			Select().
+			Debug()
+			// First().
+			// Page(1, 10)
+	*/
 
 	_, _ = A.
-		Insert(et.Json{
+		Upsert(et.Json{
 			"username": "test",
 			"password": "test",
-			"name":     "test",
+			"name":     "test2",
 		}).
 		Debug().
 		Exec()
@@ -91,4 +97,34 @@ func main() {
 	// logs.Debug(B.Definition().ToString())
 	// logs.Debug(l.Definition().ToString())
 	// logs.Debug(s)
+}
+
+func test2() {
+	a := et.Json{
+		"_id":         "-1",
+		"_idt":        "878dfcf3-2d22-4fa0-a09f-d80ebe2f9881",
+		"_index":      10,
+		"_state":      "0",
+		"date_make":   "2024-04-23T16:09:46",
+		"date_update": "2024-04-23T16:09:46",
+		"edad":        0,
+		"name":        "test",
+		"password":    "test",
+		"username":    "test",
+	}
+	b := et.Json{
+		"name":     "test2",
+		"password": "test",
+		"username": "test",
+	}
+
+	for k, v := range b {
+		_, ok := a[k]
+		logs.Debug(v, ": ", ok)
+	}
+
+	r, ch := a.Merge(b)
+	logs.Debug(r.ToString())
+	logs.Debug(ch)
+
 }

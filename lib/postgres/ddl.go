@@ -80,7 +80,7 @@ func ddlSeries() string {
 	END;
 	$$ LANGUAGE plpgsql;
 
-	// TRIGGER FUNTION
+	/* TRIGGER FUNTION */
 	CREATE OR REPLACE FUNCTION linq.SERIES_INSERT()
 	RETURNS
 	TRIGGER AS $$
@@ -696,7 +696,7 @@ func ddlSetSeries(model *linq.Model) string {
 	DROP TRIGGER IF EXISTS SERIES_UPDATE ON $1 CASCADE;
 	CREATE TRIGGER SERIES_UPDATE
 	AFTER UPDATE ON $1
-	FOR EACH ROW
+	FOR EACH ROW WHEN (NEW!=OLD)
 	EXECUTE PROCEDURE linq.SERIES_UPDATE();`, strs.Uppcase(model.Table))
 
 	result = strs.Replace(result, "\t", "")
@@ -748,7 +748,8 @@ func ddlTable(model *linq.Model) string {
 	result = strs.Append(result, sync, "\n\n")
 	recycle := ddlSetRecycling(model)
 	result = strs.Append(result, recycle, "\n\n")
-	if
+	series := ddlSetSeries(model)
+	result = strs.Append(result, series, "\n\n")
 	model.DDL = result
 	define := ddlSetModel(model)
 	result = strs.Append(result, define, "\n\n")

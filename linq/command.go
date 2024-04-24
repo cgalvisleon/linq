@@ -28,6 +28,8 @@ func (d TypeCommand) String() string {
 		return "insert"
 	case TpUpdate:
 		return "update"
+	case TpUdsert:
+		return "upsert"
 	case TpDelete:
 		return "delete"
 	}
@@ -189,6 +191,24 @@ func (c *Lcommand) consolidate() {
 	}
 }
 
+func (c *Lcommand) query(sql string, args ...any) (et.Items, error) {
+	var items et.Items
+	var err error
+	if c.From.Model.UseSource {
+		items, err = c.Linq.querySource(c.Linq.Sql, args...)
+		if err != nil {
+			return et.Items{}, err
+		}
+	} else {
+		items, err = c.Linq.query(c.Linq.Sql, args...)
+		if err != nil {
+			return et.Items{}, err
+		}
+	}
+
+	return items, nil
+}
+
 // Get current values
 func (c *Lcommand) curren() (et.Items, error) {
 	currentSql, err := c.Linq.currentSql()
@@ -196,7 +216,7 @@ func (c *Lcommand) curren() (et.Items, error) {
 		return et.Items{}, err
 	}
 
-	result, err := c.Linq.query(currentSql)
+	result, err := c.query(currentSql)
 	if err != nil {
 		return et.Items{}, err
 	}
@@ -308,13 +328,12 @@ func (c *Lcommand) Insert() error {
 		return err
 	}
 
-	items, err := c.Linq.query(c.Linq.Sql)
+	items, err := c.query(c.Linq.Sql)
 	if err != nil {
 		return err
 	}
 
 	c.Linq.Result = &items
-
 	if items.Ok {
 		c.New = &c.Linq.Result.Result[0]
 	}
@@ -342,6 +361,11 @@ func (c *Lcommand) update(current et.Items) error {
 		c.Old = &data
 		c.New, ch = data.Merge(new)
 
+		logs.Debug(c.Old.ToString())
+		logs.Debug(c.New.ToString())
+		logs.Debug(new.ToString())
+		logs.Debug(ch)
+
 		if !ch {
 			continue
 		}
@@ -364,7 +388,7 @@ func (c *Lcommand) update(current et.Items) error {
 			return err
 		}
 
-		items, err := c.Linq.query(c.Linq.Sql)
+		items, err := c.query(c.Linq.Sql)
 		if err != nil {
 			return err
 		}
@@ -445,12 +469,12 @@ func (c *Lcommand) Delete() error {
 		c.Linq.Returns.Used = false
 		c.Linq.Where(model.C(IdTField).Eq(_idt))
 
-		c.Linq.Sql, err = c.Linq.updateSql()
+		c.Linq.Sql, err = c.Linq.deleteSql()
 		if err != nil {
 			return err
 		}
 
-		items, err := c.Linq.query(c.Linq.Sql)
+		items, err := c.query(c.Linq.Sql)
 		if err != nil {
 			return err
 		}
@@ -493,18 +517,20 @@ func (m *Model) Update(data et.Json) *Linq {
 	return l
 }
 
-// Delete method to use in linq
-func (m *Model) Delete() *Linq {
+// Update or insert method to use in linq
+func (m *Model) Upsert(data et.Json) *Linq {
 	l := From(m)
 	l.TypeQuery = TpCommand
 	l.Command.From = l.Froms[0]
-	l.Command.TypeCommand = TpDelete
+	l.Command.TypeCommand = TpUdsert
+	l.Command.Data = &data
 	l.Command.consolidate()
 
 	return l
 }
 
-func (m *Model) Upsert(data et.Json) *Linq {
+// Delete method to use in linq
+func (m *Model) Delete() *Linq {
 	l := From(m)
 	l.TypeQuery = TpCommand
 	l.Command.From = l.Froms[0]

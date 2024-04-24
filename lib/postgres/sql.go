@@ -162,6 +162,14 @@ func sqlSelect(l *linq.Linq) {
 
 // Add from to sql
 func sqlFrom(l *linq.Linq) error {
+	if l.TypeQuery == linq.TpCommand {
+		f := l.Command.From
+		result := strs.Format(`FROM %s`, f.Model.Table)
+		l.Sql = strs.Append(l.Sql, result, "\n")
+
+		return nil
+	}
+
 	if len(l.Froms) == 0 {
 		return logs.Errorm("From is required")
 	}

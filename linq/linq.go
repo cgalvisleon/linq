@@ -9,6 +9,8 @@ import (
 var (
 	IdTField    = "_IDT"
 	SourceField = "_DATA"
+	IndexField  = "_INDEX"
+	StateField  = "_STATE"
 	MaxUpdate   = 1000
 	MaxDelete   = 1000
 	dbs         []*Database

@@ -5,6 +5,7 @@ import (
 
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
+	"github.com/cgalvisleon/et/strs"
 )
 
 // TypeQuery struct to use in linq
@@ -143,7 +144,7 @@ func (d *Database) QueryOne(db *sql.DB, sql string, args ...any) (et.Item, error
 	}, nil
 }
 
-// Return sql command by linq
+// Return sql row to items by linq
 func (l *Linq) query(sql string, args ...any) (et.Items, error) {
 	if l.Db.DB == nil {
 		return et.Items{}, logs.Errorm("Connected is required")
@@ -178,6 +179,49 @@ func (l *Linq) query(sql string, args ...any) (et.Items, error) {
 		}
 
 		result.Result = append(result.Result, item.Result)
+		result.Ok = true
+		result.Count++
+	}
+
+	return result, nil
+}
+
+// Return sql row _date to items by linq
+func (l *Linq) querySource(sql string, args ...any) (et.Items, error) {
+	if l.Db.DB == nil {
+		return et.Items{}, logs.Errorm("Connected is required")
+	}
+
+	if len(sql) == 0 {
+		return et.Items{}, logs.Errorm("Sql is required")
+	}
+
+	_query := SQLParse(sql, args...)
+	if l.debug {
+		logs.Debug(l.Definition().ToString())
+		logs.Debug(_query)
+	}
+
+	if !l.ItIsBuilt {
+		return et.Items{}, logs.Alertm("Linq not built")
+	}
+
+	rows, err := query(l.Db.DB, _query)
+	if err != nil {
+		return et.Items{}, logs.Error(err)
+	}
+	defer rows.Close()
+
+	sourceField := strs.Lowcase(SourceField)
+	var result et.Items
+	for rows.Next() {
+		var item et.Item
+		item.Scan(rows)
+		for _, col := range l.Details.Columns {
+			col.FuncDetail(&item.Result)
+		}
+
+		result.Result = append(result.Result, item.Result.Json(sourceField))
 		result.Ok = true
 		result.Count++
 	}

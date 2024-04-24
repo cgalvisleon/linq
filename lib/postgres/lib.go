@@ -46,7 +46,13 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 
 	d.DB = result
 
-	sql := ddlSync()
+	sql := ddlSeries()
+	_, err = d.DB.Exec(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	sql = ddlSync()
 	_, err = d.DB.Exec(sql)
 	if err != nil {
 		return nil, err
@@ -59,12 +65,6 @@ func (d *Postgres) Connect(params et.Json) (*sql.DB, error) {
 	}
 
 	sql = ddlModels()
-	_, err = d.DB.Exec(sql)
-	if err != nil {
-		return nil, err
-	}
-
-	sql = ddlSeries()
 	_, err = d.DB.Exec(sql)
 	if err != nil {
 		return nil, err

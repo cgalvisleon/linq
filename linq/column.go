@@ -129,7 +129,7 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	}
 
 	if !model.UseStatus {
-		model.UseStatus = TpStatus == TpDate
+		model.UseStatus = result.Up() == strs.Uppcase(StateField)
 	}
 
 	if !model.UseSource {

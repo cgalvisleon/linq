@@ -180,8 +180,8 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 
 	idT := nAme(IdTField)
 	result.DefineColum(idT, "_idT of the table", TpKey, TpKey.Default())
-	index := "_INDEX"
-	result.DefineColum(index, "_index of the table", TpSerie, TpSerie.Default())
+	result.DefineColum(IndexField, "_index of the table", TpSerie, TpSerie.Default())
+	result.DefineColum(StateField, "_state record of the table", TpKey, "0")
 
 	schema.AddModel(result)
 
