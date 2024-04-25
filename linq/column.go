@@ -125,15 +125,15 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 		TypeData:    typeData,
 		Definition:  *typeData.Definition(),
 		Default:     _default,
-		SourceField: name == strs.Uppcase(SourceField),
+		SourceField: name == SourceField.Up(),
 	}
 
 	if !model.UseStatus {
-		model.UseStatus = result.Up() == strs.Uppcase(StateField)
+		model.UseStatus = result.Up() == StateField.Up()
 	}
 
 	if !model.UseSource {
-		model.UseSource = result.Up() == strs.Uppcase(SourceField)
+		model.UseSource = result.Up() == SourceField.Up()
 		if model.UseSource {
 			model.Source = result
 		}

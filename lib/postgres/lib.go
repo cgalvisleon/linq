@@ -87,11 +87,15 @@ func (d *Postgres) DdlSql(m *linq.Model) string {
 
 	result = ddlTable(m)
 
+	result = strs.Format(`%s;`, result)
+
 	return result
 }
 
 // SelectSql return the sql to select
 func (d *Postgres) SelectSql(l *linq.Linq) string {
+	l.Clear()
+
 	sqlSelect(l)
 
 	sqlFrom(l)
@@ -110,11 +114,13 @@ func (d *Postgres) SelectSql(l *linq.Linq) string {
 
 	sqlOffset(l)
 
-	return l.Sql
+	return l.SQL()
 }
 
 // CurrentSql return the sql to get the current
 func (d *Postgres) CurrentSql(l *linq.Linq) string {
+	l.Clear()
+
 	sqlCurrent(l)
 
 	sqlFrom(l)
@@ -123,34 +129,44 @@ func (d *Postgres) CurrentSql(l *linq.Linq) string {
 
 	sqlLimit(l)
 
-	return l.Sql
+	return l.SQL()
 }
 
 // InsertSql return the sql to insert
 func (d *Postgres) InsertSql(l *linq.Linq) string {
+	l.Clear()
+
 	sqlInsert(l)
 
 	sqlReturns(l)
 
-	return l.Sql
+	return l.SQL()
 }
 
 // UpdateSql return the sql to update
 func (d *Postgres) UpdateSql(l *linq.Linq) string {
+	l.Clear()
+
 	sqlUpdate(l)
+
+	sqlWhere(l)
 
 	sqlReturns(l)
 
-	return l.Sql
+	return l.SQL()
 }
 
 // DeleteSql return the sql to delete
 func (d *Postgres) DeleteSql(l *linq.Linq) string {
+	l.Clear()
+
 	sqlDelete(l)
+
+	sqlWhere(l)
 
 	sqlReturns(l)
 
-	return l.Sql
+	return l.SQL()
 }
 
 // DCL Data Control Language execute a command
@@ -394,9 +410,9 @@ func (d *Postgres) MutationSql(l *linq.Linq) string {
 func (d *Postgres) Sql(command string) string {
 	switch command {
 	case "next_serie":
-		return `SELECT linq.nextserie($1) AS INDEX`
+		return `SELECT linq.nextserie($1) AS INDEX;`
 	case "set_serie":
-		return `SELECT linq.setserie($1, $2) AS INDEX`
+		return `SELECT linq.setserie($1, $2) AS INDEX;`
 	default:
 		return ""
 	}

@@ -99,6 +99,8 @@ func (d *Sqlite) InsertSql(l *linq.Linq) string {
 func (d *Sqlite) UpdateSql(l *linq.Linq) string {
 	sqlUpdate(l)
 
+	sqlWhere(l)
+
 	sqlReturns(l)
 
 	return l.Sql

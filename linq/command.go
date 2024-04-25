@@ -42,9 +42,10 @@ type Lcommand struct {
 	From        *Lfrom
 	TypeCommand TypeCommand
 	Data        *et.Json
-	Source      *et.Json
 	Old         *et.Json
 	New         *et.Json
+	Columns     *et.Json
+	Atribs      *et.Json
 	User        et.Json
 	Project     et.Json
 }
@@ -55,7 +56,8 @@ func (l *Lcommand) Definition() et.Json {
 		"from":        l.From.Definition(),
 		"typeCommand": l.TypeCommand.String(),
 		"data":        l.Data,
-		"source":      l.Source,
+		"columns":     l.Columns,
+		"atrib":       l.Atribs,
 		"old":         l.Old,
 		"new":         l.New,
 	}
@@ -87,9 +89,10 @@ func newCommand(from *Lfrom, tp TypeCommand) *Lcommand {
 		From:        from,
 		TypeCommand: tp,
 		Data:        &et.Json{},
-		Source:      &et.Json{},
 		Old:         &et.Json{},
 		New:         &et.Json{},
+		Columns:     &et.Json{},
+		Atribs:      &et.Json{},
 	}
 }
 
@@ -99,18 +102,12 @@ func (c *Lcommand) setSource(col *Column, value interface{}) {
 		return
 	}
 
-	if c.Source == nil {
-		c.Source = &et.Json{}
-	}
-
 	if col.TypeColumn == TpColumn {
-		c.Source.Set(col.Low(), value)
+		c.Columns.Set(col.Low(), value)
 	}
 
 	if col.TypeColumn == TpAtrib {
-		_data := c.Source.Json(SourceField)
-		_data.Set(col.Low(), value)
-		c.Source.Set(SourceField, _data)
+		c.Atribs.Set(col.Low(), value)
 	}
 }
 
@@ -191,6 +188,7 @@ func (c *Lcommand) consolidate() {
 	}
 }
 
+// Query method to use in linq
 func (c *Lcommand) query(sql string, args ...any) (et.Items, error) {
 	var items et.Items
 	var err error
@@ -335,7 +333,7 @@ func (c *Lcommand) Insert() error {
 
 	c.Linq.Result = &items
 	if items.Ok {
-		c.New = &c.Linq.Result.Result[0]
+		c.New = &items.Result[0]
 	}
 
 	err = c.afterInsert()
@@ -365,20 +363,18 @@ func (c *Lcommand) update(current et.Items) error {
 			continue
 		}
 
-		logs.Debug(c.New.ToString())
-
 		err = c.beforeUpdate()
 		if err != nil {
 			return err
 		}
 
-		_idt := c.Old.Get(IdTField)
+		_idt := c.Old.Get(IdTField.Low())
 		if _idt == nil {
 			return logs.Errorm("No idT in data")
 		}
 
 		c.Linq.Returns.Used = true
-		c.Linq.Where(model.C(IdTField).Eq(_idt))
+		c.Linq.Where(model.C(IdTField.Low()).Eq(_idt))
 
 		c.Linq.Sql, err = c.Linq.updateSql()
 		if err != nil {
@@ -391,11 +387,10 @@ func (c *Lcommand) update(current et.Items) error {
 		}
 
 		c.Linq.Result = &items
-		if !items.Ok {
-			return nil
+		if items.Ok {
+			c.New = &items.Result[0]
 		}
 
-		c.New = &items.Result[0]
 		err = c.afterUpdate()
 		if err != nil {
 			return err
@@ -458,13 +453,13 @@ func (c *Lcommand) Delete() error {
 			return err
 		}
 
-		_idt := c.Old.Get(IdTField)
+		_idt := c.Old.Get(IdTField.Low())
 		if _idt == nil {
 			return logs.Errorm("No idT in data")
 		}
 
 		c.Linq.Returns.Used = false
-		c.Linq.Where(model.C(IdTField).Eq(_idt))
+		c.Linq.Where(model.C(IdTField.Low()).Eq(_idt))
 
 		c.Linq.Sql, err = c.Linq.deleteSql()
 		if err != nil {
@@ -477,9 +472,6 @@ func (c *Lcommand) Delete() error {
 		}
 
 		c.Linq.Result = &items
-		if !items.Ok {
-			return nil
-		}
 
 		err = c.afterDelete()
 		if err != nil {

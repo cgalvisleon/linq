@@ -31,7 +31,7 @@ func sqlColumns(l *linq.Linq, cols ...*linq.Lselect) string {
 				def = strs.Format(`%s`, s.As())
 				appendColumn(def)
 			} else if linq.TpAtrib == c.TypeColumn {
-				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(linq.SourceField), c.Low())
+				def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, linq.SourceField.Up(), c.Low())
 				def = strs.Format(`%s AS %s`, def, c.Up())
 				appendColumn(def)
 			} else if slices.Contains([]linq.TypeData{linq.TpRollup, linq.TpRelation}, c.TypeData) {
@@ -78,7 +78,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 		objects = strs.Append(objects, val, ",\n")
 		n++
 		if n >= 20 {
-			def = strs.Format("jsonb_build_object(%s)", objects)
+			def = strs.Format("jsonb_build_object(\n%s)", objects)
 			result = strs.Append(result, def, "||")
 			objects = ""
 			n = 0
@@ -95,9 +95,9 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 				appendObjects(def)
 			} else if linq.TpAtrib == c.TypeColumn { // 'name', A._DATA#>>'{name}'
 				if f.Linq.TypeQuery == linq.TpCommand {
-					def = strs.Format(`%s#>>'{%s}'`, strs.Uppcase(linq.SourceField), c.Low())
+					def = strs.Format(`%s#>>'{%s}'`, linq.SourceField.Up(), c.Low())
 				} else {
-					def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, strs.Uppcase(linq.SourceField), c.Low())
+					def = strs.Format(`%s.%s#>>'{%s}'`, f.AS, linq.SourceField.Up(), c.Low())
 				}
 				def = strs.Format(`'%s', %s`, c.Low(), def)
 				appendObjects(def)
@@ -122,22 +122,22 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 			appendColumns(f, c)
 		}
 		if n > 0 {
-			def = strs.Format("jsonb_build_object(%s)", objects)
+			def = strs.Format("jsonb_build_object(\n%s)", objects)
 			result = strs.Append(result, def, "||")
 		}
 
-		return strs.Format(`%s AS %s`, result, linq.SourceField)
+		return strs.Format(`%s AS %s`, result, linq.SourceField.Up())
 	}
 
 	for _, c := range cols {
 		appendColumns(c.From, c.Column)
 	}
 	if n > 0 {
-		def = strs.Format("jsonb_build_object(%s)", objects)
+		def = strs.Format("jsonb_build_object(\n%s)", objects)
 		result = strs.Append(result, def, "||")
 	}
 
-	return strs.Format(`%s AS %s`, result, linq.SourceField)
+	return strs.Format(`%s AS %s`, result, linq.SourceField.Up())
 }
 
 // Add select to sql
@@ -322,20 +322,36 @@ func sqlCurrent(l *linq.Linq) {
 // Add sql insert to sql
 func sqlInsert(l *linq.Linq) {
 	var result string
-	var fields string
+	var columns string
 	var values string
+	var atribs string
 	com := l.Command
 	m := com.From.Model
 
-	for k, v := range *com.Source {
+	for k, v := range *com.Columns {
 		field := strs.Uppcase(k)
 		value := et.Unquote(v)
+		def := strs.Format(`%v`, value)
 
-		fields = strs.Append(fields, field, ", ")
-		values = strs.Append(values, strs.Format(`%v`, value), ", ")
+		columns = strs.Append(columns, field, ", ")
+		values = strs.Append(values, def, ", ")
 	}
 
-	result = strs.Format("INSERT INTO %s(%s)\nVALUES (%s)", m.Table, fields, values)
+	for k, v := range *com.Atribs {
+		field := strs.Lowcase(k)
+		value := et.Quote(v)
+		def := strs.Format(`"%s": %v`, field, value)
+
+		atribs = strs.Append(atribs, def, ",\n")
+	}
+
+	if len(atribs) > 0 {
+		columns = strs.Append(columns, linq.SourceField.Up(), ", ")
+		def := strs.Format(`'{%s}'`, atribs)
+		values = strs.Append(values, def, ", ")
+	}
+
+	result = strs.Format("INSERT INTO %s(%s)\nVALUES (%s)", m.Table, columns, values)
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }
@@ -343,17 +359,31 @@ func sqlInsert(l *linq.Linq) {
 // Add sql update to sql
 func sqlUpdate(l *linq.Linq) {
 	var result string
-	var set string
+	var values string
+	var atribs string = linq.SourceField.Up()
 	com := l.Command
 
-	for k, v := range *com.New {
+	for k, v := range *com.Columns {
 		field := strs.Uppcase(k)
 		value := et.Unquote(v)
+		def := strs.Format(`%s = %v`, field, value)
 
-		set = strs.Append(set, strs.Format(`%s = %v`, field, value), ", ")
+		values = strs.Append(values, def, ",\n")
 	}
 
-	result = strs.Format("UPDATE %s\nSET %s", com.From.Model.Table, set)
+	for k, v := range *com.Atribs {
+		field := strs.Lowcase(k)
+		value := et.Quote(v)
+
+		atribs = strs.Format(`jsonb_set(%s, '{%s}', '%v', true)`, atribs, field, value)
+	}
+
+	if len(atribs) > 0 {
+		def := strs.Format(`%s = %v`, linq.SourceField.Up(), atribs)
+		values = strs.Append(values, def, ",\n")
+	}
+
+	result = strs.Format("UPDATE %s SET\n%s", com.From.Model.Table, values)
 
 	l.Sql = strs.Append(l.Sql, result, "\n")
 }

@@ -11,9 +11,9 @@ func (m *Model) DefineColum(name, description string, typeData TypeData, _defaul
 
 // DefineAtrib define a atrib in the model
 func (m *Model) DefineAtrib(name, description string, typeData TypeData, _default interface{}) *Column {
-	source := COlumn(m, SourceField)
+	source := COlumn(m, SourceField.Low())
 	if source == nil {
-		source = m.DefineColum(SourceField, "Source field", TpJson, TpJson.Default())
+		source = m.DefineColum(SourceField.Low(), "Source field", TpJson, TpJson.Default())
 	}
 
 	result := newColumn(m, name, description, TpAtrib, typeData, _default)

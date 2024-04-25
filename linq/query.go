@@ -5,7 +5,6 @@ import (
 
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/logs"
-	"github.com/cgalvisleon/et/strs"
 )
 
 // TypeQuery struct to use in linq
@@ -106,11 +105,7 @@ func (d *Database) Query(db *sql.DB, sql string, args ...any) (et.Items, error) 
 	_query := SQLParse(sql, args...)
 
 	if d.debug {
-		logs.Debug(et.Json{
-			"sql":   query,
-			"args":  args,
-			"query": _query,
-		}.ToString())
+		logs.Debug(_query)
 	}
 
 	rows, err := query(db, _query)
@@ -212,7 +207,6 @@ func (l *Linq) querySource(sql string, args ...any) (et.Items, error) {
 	}
 	defer rows.Close()
 
-	sourceField := strs.Lowcase(SourceField)
 	var result et.Items
 	for rows.Next() {
 		var item et.Item
@@ -221,7 +215,7 @@ func (l *Linq) querySource(sql string, args ...any) (et.Items, error) {
 			col.FuncDetail(&item.Result)
 		}
 
-		result.Result = append(result.Result, item.Result.Json(sourceField))
+		result.Result = append(result.Result, item.Result.Json(SourceField.Low()))
 		result.Ok = true
 		result.Count++
 	}

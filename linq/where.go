@@ -1,10 +1,7 @@
 package linq
 
 import (
-	"reflect"
-
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -32,8 +29,6 @@ func (w *Lwhere) Definition() et.Json {
 func (w *Lwhere) value() string {
 	var value string
 	switch v := w.Value.(type) {
-	case string:
-		value = strs.Format(`"%s"`, v)
 	case *Column:
 		s := w.Linq.GetColumn(v)
 		value = s.As()
@@ -45,7 +40,8 @@ func (w *Lwhere) value() string {
 	case Lselect:
 		value = v.As()
 	default:
-		logs.Debug(reflect.TypeOf(v))
+		val := et.Unquote(v)
+		value = strs.Format(`%v`, val)
 	}
 
 	return value

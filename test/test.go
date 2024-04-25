@@ -32,7 +32,6 @@ func test1() {
 			{Name: "username", Description: "", TypeData: linq.TpKey, Default: linq.TpKey.Default()},
 			{Name: "password", Description: "", TypeData: linq.TpKey, Default: linq.TpKey.Default()},
 			{Name: "edad", Description: "", TypeData: linq.TpNumber, Default: linq.TpNumber.Default()},
-			{Name: linq.SourceField, Description: "", TypeData: linq.TpJson, Default: linq.TpJson.Default()},
 		},
 		Atribs: []linq.COl{
 			{Name: "name", Description: "", TypeData: linq.TpText, Default: linq.TpText.Default()},
@@ -88,8 +87,13 @@ func test1() {
 		Upsert(et.Json{
 			"username": "test",
 			"password": "test",
-			"name":     "test2",
+			"name":     "test",
 		}).
+		Debug().
+		Exec()
+
+	_, _ = A.
+		Delete().
 		Debug().
 		Exec()
 

@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/logs"
 	"github.com/cgalvisleon/et/strs"
 )
 
@@ -178,10 +177,9 @@ func NewModel(schema *Schema, name, description string, version int) *Model {
 		Version:           version,
 	}
 
-	idT := nAme(IdTField)
-	result.DefineColum(idT, "_idT of the table", TpKey, TpKey.Default())
-	result.DefineColum(IndexField, "_index of the table", TpSerie, TpSerie.Default())
-	result.DefineColum(StateField, "_state record of the table", TpKey, "0")
+	result.DefineColum(IdTField.Low(), "_idT of the table", TpKey, TpKey.Default())
+	result.DefineColum(IndexField.Low(), "_index of the table", TpSerie, TpSerie.Default())
+	result.DefineColum(StateField.Low(), "_state record of the table", TpKey, "0")
 
 	schema.AddModel(result)
 
@@ -367,8 +365,6 @@ func (m *Model) AddPrimaryKey(name string) *Column {
 
 		return col
 	}
-
-	logs.Debug("AddPrimaryKey", name)
 
 	return nil
 }

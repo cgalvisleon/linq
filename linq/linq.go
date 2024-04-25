@@ -5,17 +5,55 @@ import (
 	"github.com/cgalvisleon/et/strs"
 )
 
+type TypeVar int
+
+// Var field system name
+const (
+	IdTField TypeVar = iota
+	SourceField
+	IndexField
+	StateField
+)
+
+// Return upcase to field system
+func (t TypeVar) Up() string {
+	switch t {
+	case IdTField:
+		return "_IDT"
+	case SourceField:
+		return "_DATA"
+	case IndexField:
+		return "_INDEX"
+	case StateField:
+		return "_STATE"
+	}
+
+	return ""
+}
+
+// Return lowcase to field system
+func (t TypeVar) Low() string {
+	switch t {
+	case IdTField:
+		return "_idt"
+	case SourceField:
+		return "_data"
+	case IndexField:
+		return "_index"
+	case StateField:
+		return "_state"
+	}
+
+	return ""
+}
+
 // Global variables
 var (
-	IdTField    = "_IDT"
-	SourceField = "_DATA"
-	IndexField  = "_INDEX"
-	StateField  = "_STATE"
-	MaxUpdate   = 1000
-	MaxDelete   = 1000
-	dbs         []*Database
-	schemas     []*Schema
-	models      []*Model
+	MaxUpdate = 1000
+	MaxDelete = 1000
+	dbs       []*Database
+	schemas   []*Schema
+	models    []*Model
 )
 
 // Define type columns in linq
@@ -161,6 +199,20 @@ func (l *Linq) Debug() *Linq {
 	return l
 }
 
+// Add ';' to end sql and return
+func (l *Linq) SQL() string {
+	l.Sql = strs.Format(`%s;`, l.Sql)
+
+	return l.Sql
+}
+
+// Clear sql
+func (l *Linq) Clear() string {
+	l.Sql = ""
+
+	return l.Sql
+}
+
 // Set user to linq
 func (l *Linq) User(val et.Json) *Linq {
 	l.Command.User = val
@@ -175,6 +227,7 @@ func (l *Linq) Project(val et.Json) *Linq {
 	return l
 }
 
+// Init linq
 func init() {
 	dbs = []*Database{}
 	schemas = []*Schema{}
