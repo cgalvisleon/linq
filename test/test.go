@@ -84,9 +84,18 @@ func test1() {
 	*/
 
 	_, _ = A.
-		Upsert(et.Json{
+		Insert(et.Json{
 			"username": "test",
 			"password": "test",
+			"name":     "test",
+		}).
+		Debug().
+		Exec()
+
+	_, _ = A.
+		Update(et.Json{
+			"username": "test",
+			"password": "test2",
 			"name":     "test",
 		}).
 		Debug().

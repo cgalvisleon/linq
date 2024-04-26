@@ -50,24 +50,24 @@ type Validation func(col *Column, value interface{}) bool
 
 // Column is a struct for columns in a model
 type Column struct {
-	Model       *Model
-	Name        string
-	Tag         string
-	Description string
-	TypeColumn  TypeColumn
-	TypeData    TypeData
-	Definition  et.Json
-	Default     interface{}
-	RelationTo  *Relation
-	FuncDetail  FuncDetail
-	Formula     string
-	PrimaryKey  bool
-	ForeignKey  bool
-	Indexed     bool
-	Unique      bool
-	Hidden      bool
-	SourceField bool
-	Required    *Required
+	Model         *Model
+	Name          string
+	Tag           string
+	Description   string
+	TypeColumn    TypeColumn
+	TypeData      TypeData
+	Definition    et.Json
+	Default       interface{}
+	RelationTo    *Relation
+	FuncDetail    FuncDetail
+	Formula       string
+	PrimaryKey    bool
+	ForeignKey    bool
+	Indexed       bool
+	Unique        bool
+	Hidden        bool
+	IsSourceField bool
+	Required      *Required
 }
 
 // name return a valid name of column, table, schema or database
@@ -117,15 +117,15 @@ func newColumn(model *Model, name, description string, typeColumm TypeColumn, ty
 	}
 
 	result = &Column{
-		Model:       model,
-		Name:        name,
-		Tag:         tag,
-		Description: description,
-		TypeColumn:  typeColumm,
-		TypeData:    typeData,
-		Definition:  *typeData.Definition(),
-		Default:     _default,
-		SourceField: name == SourceField.Up(),
+		Model:         model,
+		Name:          name,
+		Tag:           tag,
+		Description:   description,
+		TypeColumn:    typeColumm,
+		TypeData:      typeData,
+		Definition:    *typeData.Definition(),
+		Default:       _default,
+		IsSourceField: name == SourceField.Up(),
 	}
 
 	if !model.UseStatus {
@@ -197,7 +197,7 @@ func (c *Column) DEfinition() et.Json {
 		"indexed":     c.Indexed,
 		"unique":      c.Unique,
 		"hidden":      c.Hidden,
-		"sourceField": c.SourceField,
+		"sourceField": c.IsSourceField,
 		"required":    required,
 	}
 }

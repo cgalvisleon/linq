@@ -44,6 +44,7 @@ type Lcommand struct {
 	Data        *et.Json
 	Old         *et.Json
 	New         *et.Json
+	Change      *et.Json
 	Columns     *et.Json
 	Atribs      *et.Json
 	User        et.Json
@@ -60,6 +61,7 @@ func (l *Lcommand) Definition() et.Json {
 		"atrib":       l.Atribs,
 		"old":         l.Old,
 		"new":         l.New,
+		"change":      l.Change,
 	}
 }
 
@@ -91,6 +93,7 @@ func newCommand(from *Lfrom, tp TypeCommand) *Lcommand {
 		Data:        &et.Json{},
 		Old:         &et.Json{},
 		New:         &et.Json{},
+		Change:      &et.Json{},
 		Columns:     &et.Json{},
 		Atribs:      &et.Json{},
 	}
@@ -358,6 +361,7 @@ func (c *Lcommand) update(current et.Items) error {
 	for _, data := range current.Result {
 		c.Old = &data
 		c.New, ch = data.Merge(new)
+		c.Change, _ = data.Chage(new)
 
 		if !ch {
 			continue
@@ -375,7 +379,6 @@ func (c *Lcommand) update(current et.Items) error {
 
 		c.Linq.Returns.Used = true
 		c.Linq.Where(model.C(IdTField.Low()).Eq(_idt))
-
 		c.Linq.Sql, err = c.Linq.updateSql()
 		if err != nil {
 			return err
@@ -390,6 +393,8 @@ func (c *Lcommand) update(current et.Items) error {
 		if items.Ok {
 			c.New = &items.Result[0]
 		}
+
+		go c.UpdateCascade()
 
 		err = c.afterUpdate()
 		if err != nil {
@@ -460,7 +465,6 @@ func (c *Lcommand) Delete() error {
 
 		c.Linq.Returns.Used = false
 		c.Linq.Where(model.C(IdTField.Low()).Eq(_idt))
-
 		c.Linq.Sql, err = c.Linq.deleteSql()
 		if err != nil {
 			return err
@@ -473,12 +477,24 @@ func (c *Lcommand) Delete() error {
 
 		c.Linq.Result = &items
 
+		go c.DeleteCascade()
+
 		err = c.afterDelete()
 		if err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+// Update cascade data to linq
+func (c *Lcommand) UpdateCascade() error {
+	return nil
+}
+
+// Delete cascade data to linq
+func (c *Lcommand) DeleteCascade() error {
 	return nil
 }
 

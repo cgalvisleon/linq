@@ -89,6 +89,19 @@ type Trigger func(model *Model, old, new *et.Json, data et.Json) error
 // Listener is a function for listener
 type Listener func(data et.Json)
 
+// RelationTo is a struct for relation to
+type RelationTo struct {
+	PrimaryKey *Column
+	ForeignKey *Column
+}
+
+func (r *RelationTo) Definition() et.Json {
+	return et.Json{
+		"primaryKey": r.PrimaryKey.Name,
+		"foreignKey": r.ForeignKey.Name,
+	}
+}
+
 // Model is a struct for models in a schema
 type Model struct {
 	Schema            *Schema

@@ -88,7 +88,7 @@ func sqlData(l *linq.Linq, cols ...*linq.Lselect) string {
 	appendColumns := func(f *linq.Lfrom, c *linq.Column) {
 		if c.TypeColumn == linq.TpDetail {
 			l.GetDetail(c)
-		} else if !c.SourceField {
+		} else if !c.IsSourceField {
 			s := l.GetColumn(c)
 			if linq.TpColumn == c.TypeColumn { // 'name', A.NAME
 				def = strs.Format(`'%s', %s`, c.Low(), s.As())
